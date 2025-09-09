@@ -1,12 +1,4 @@
-﻿using System.Collections.Immutable;
-using System.Text.RegularExpressions;
-using Ardalis.Result;
-using TC.CloudGames.Games.Domain.ValueObjects;
-using TC.CloudGames.SharedKernel.Domain.Aggregate;
-using TC.CloudGames.SharedKernel.Domain.Events;
-using TC.CloudGames.SharedKernel.Extensions;
-
-namespace TC.CloudGames.Games.Domain.Aggregates
+﻿namespace TC.CloudGames.Games.Domain.Aggregates
 {
     /// <summary>
     /// Game aggregate root that manages game entities and their business rules using Event Sourcing pattern.
@@ -77,7 +69,7 @@ namespace TC.CloudGames.Games.Domain.Aggregates
             if (errors.Count > 0)
                 return Result.Invalid(errors.ToArray());
 
-            return CreateAggregate(name, releaseDate, ageRating, developerInfo, diskSize, price, 
+            return CreateAggregate(name, releaseDate, ageRating, developerInfo, diskSize, price,
                 gameDetails, systemRequirements, description, playtime, rating, officialLink, gameStatus);
         }
 
@@ -114,22 +106,22 @@ namespace TC.CloudGames.Games.Domain.Aggregates
             var priceResult = Price.Create(priceAmount);
             var gameDetailsResult = GameDetails.Create(genre, platformList, tags, gameMode, distributionFormat, availableLanguages, supportsDlcs);
             var systemReqResult = SystemRequirements.Create(minimumSystemReq, recommendedSystemReq);
-            
+
             Playtime? playtime = null;
             Rating? rating = null;
 
             var errors = new List<ValidationError>();
-            AddErrorsIfFailure(errors, ageRatingResult);
-            AddErrorsIfFailure(errors, developerInfoResult);
-            AddErrorsIfFailure(errors, diskSizeResult);
-            AddErrorsIfFailure(errors, priceResult);
-            AddErrorsIfFailure(errors, gameDetailsResult);
-            AddErrorsIfFailure(errors, systemReqResult);
+            errors.AddErrorsIfFailure(ageRatingResult);
+            errors.AddErrorsIfFailure(developerInfoResult);
+            errors.AddErrorsIfFailure(diskSizeResult);
+            errors.AddErrorsIfFailure(priceResult);
+            errors.AddErrorsIfFailure(gameDetailsResult);
+            errors.AddErrorsIfFailure(systemReqResult);
 
             if (playtimeHours.HasValue || playerCount.HasValue)
             {
                 var playtimeResult = Playtime.Create(playtimeHours, playerCount);
-                AddErrorsIfFailure(errors, playtimeResult);
+                errors.AddErrorsIfFailure(playtimeResult);
                 if (playtimeResult.IsSuccess)
                     playtime = playtimeResult.Value;
             }
@@ -137,7 +129,7 @@ namespace TC.CloudGames.Games.Domain.Aggregates
             if (ratingAverage.HasValue)
             {
                 var ratingResult = Rating.Create(ratingAverage);
-                AddErrorsIfFailure(errors, ratingResult);
+                errors.AddErrorsIfFailure(ratingResult);
                 if (ratingResult.IsSuccess)
                     rating = ratingResult.Value;
             }
@@ -147,7 +139,7 @@ namespace TC.CloudGames.Games.Domain.Aggregates
             if (errors.Count > 0)
                 return Result.Invalid(errors.ToArray());
 
-            return CreateAggregate(name, releaseDate, ageRatingResult.Value, developerInfoResult.Value, 
+            return CreateAggregate(name, releaseDate, ageRatingResult.Value, developerInfoResult.Value,
                 diskSizeResult.Value, priceResult.Value, gameDetailsResult.Value, systemReqResult.Value,
                 description, playtime, rating, officialLink, gameStatus);
         }
@@ -324,15 +316,6 @@ namespace TC.CloudGames.Games.Domain.Aggregates
         #endregion
 
         #region Private Helpers
-
-        /// <summary>
-        /// Helper method to add errors from failed results to the error list.
-        /// </summary>
-        private static void AddErrorsIfFailure<T>(List<ValidationError> errors, Result<T> result)
-        {
-            if (!result.IsSuccess)
-                errors.AddRange(result.ValidationErrors);
-        }
 
         /// <summary>
         /// Creates and returns a new GameAggregate instance and applies the GameCreatedEvent.
