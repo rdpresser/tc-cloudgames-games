@@ -7,12 +7,12 @@ namespace TC.CloudGames.Games.Domain.ValueObjects
     /// <summary>
     /// Value Object representing an age rating with validation and predefined ratings.
     /// </summary>
-    public sealed class AgeRating
+    public sealed record AgeRating
     {
         private const int MaxLength = 10;
 
         public static readonly IImmutableSet<string> ValidRatings = ImmutableHashSet.Create("E", "E10+", "T", "M", "A", "RP");
-        
+
         public static readonly ValidationError Required = new("AgeRating.Required", "Age rating value is required.");
         public static readonly ValidationError Invalid = new("AgeRating.Invalid", $"Invalid age rating value specified. Valid age ratings are: {ValidRatings.JoinWithQuotes()}.");
         public static readonly ValidationError MaximumLength = new("AgeRating.MaximumLength", $"Age rating value cannot exceed {MaxLength} characters.");
