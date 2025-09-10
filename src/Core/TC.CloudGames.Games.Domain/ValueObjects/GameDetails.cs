@@ -1,7 +1,4 @@
-﻿using Ardalis.Result;
-using System.Collections.Immutable;
-using System.Text.Json;
-using TC.CloudGames.SharedKernel.Extensions;
+﻿using System.Text.Json;
 
 namespace TC.CloudGames.Games.Domain.ValueObjects
 {
@@ -199,8 +196,8 @@ namespace TC.CloudGames.Games.Domain.ValueObjects
             string? availableLanguages,
             bool supportsDlcs)
         {
-            var platformList = string.IsNullOrWhiteSpace(platformListJson) 
-                ? new List<string>() 
+            var platformList = string.IsNullOrWhiteSpace(platformListJson)
+                ? new List<string>()
                 : JsonSerializer.Deserialize<List<string>>(platformListJson) ?? new List<string>();
 
             return Create(genre, platformList, tags, gameMode, distributionFormat, availableLanguages, supportsDlcs);

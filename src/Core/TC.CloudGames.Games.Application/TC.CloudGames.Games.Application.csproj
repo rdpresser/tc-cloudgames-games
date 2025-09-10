@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <Folder Include="UseCases\ActivateGame\" />
+    <Folder Include="UseCases\DeactivateGame\" />
+    <Folder Include="UseCases\GetGameList\" />
+    <Folder Include="UseCases\GetGameById\" />
+    <Folder Include="UseCases\UpdateGameDetails\" />
+    <Folder Include="UseCases\UpdateGameRating\" />
+    <Folder Include="UseCases\UpdateGameStatus\" />
+    <Folder Include="UseCases\UpdateGamePrice\" />
+    <Folder Include="UseCases\UpdateGameBasicInfo\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\..\shared\common\src\TC.CloudGames.Contracts\TC.CloudGames.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\..\..\shared\common\src\TC.CloudGames.SharedKernel\TC.CloudGames.SharedKernel.csproj" />
+    <ProjectReference Include="..\TC.CloudGames.Games.Domain\TC.CloudGames.Games.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FastEndpoints" Version="7.0.1" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0" />
+  </ItemGroup>
+
+</Project>
