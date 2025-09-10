@@ -1,6 +1,4 @@
-﻿using TC.CloudGames.Contracts.Events.Games;
-
-namespace TC.CloudGames.Games.Application.UseCases.CreateGame
+﻿namespace TC.CloudGames.Games.Application.UseCases.CreateGame
 {
     public static class CreateGameMapper
     {

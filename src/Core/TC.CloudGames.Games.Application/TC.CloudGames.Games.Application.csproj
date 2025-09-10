@@ -3,8 +3,6 @@
   <ItemGroup>
     <Folder Include="UseCases\ActivateGame\" />
     <Folder Include="UseCases\DeactivateGame\" />
-    <Folder Include="UseCases\GetGameList\" />
-    <Folder Include="UseCases\GetGameById\" />
     <Folder Include="UseCases\UpdateGameDetails\" />
     <Folder Include="UseCases\UpdateGameRating\" />
     <Folder Include="UseCases\UpdateGameStatus\" />
