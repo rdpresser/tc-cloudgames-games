@@ -24,9 +24,14 @@ global using TC.CloudGames.Contracts.Events.Games;
 global using TC.CloudGames.Games.Api.Extensions;
 global using TC.CloudGames.Games.Api.Middleware;
 global using TC.CloudGames.Games.Application;
+global using TC.CloudGames.Games.Application.Abstractions;
+global using TC.CloudGames.Games.Application.UseCases.CreateGame;
 global using TC.CloudGames.Games.Domain.Aggregates;
+global using TC.CloudGames.Games.Domain.ValueObjects;
 global using TC.CloudGames.Games.Infrastructure;
 global using TC.CloudGames.Games.Infrastructure.Projections;
+global using TC.CloudGames.SharedKernel.Api.EndPoints;
+global using TC.CloudGames.SharedKernel.Application.Behaviors;
 global using TC.CloudGames.SharedKernel.Extensions;
 global using TC.CloudGames.SharedKernel.Infrastructure.Caching.HealthCheck;
 global using TC.CloudGames.SharedKernel.Infrastructure.Caching.Provider;
@@ -43,6 +48,7 @@ global using Wolverine.RabbitMQ;
 global using Wolverine.Runtime.Routing;
 global using ZiggyCreatures.Caching.Fusion;
 global using ZiggyCreatures.Caching.Fusion.Serialization.SystemTextJson;
+global using CreateGame = TC.CloudGames.Games.Application.UseCases.CreateGame;
 //**//
 using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("TC.CloudGames.Games.Unit.Tests")]
