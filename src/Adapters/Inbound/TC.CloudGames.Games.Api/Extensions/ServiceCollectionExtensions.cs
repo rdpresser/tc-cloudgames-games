@@ -305,17 +305,23 @@
             })
             .AddJwtBearer(opt =>
             {
+                var jwtSettings = configuration.GetSection("Jwt").Get<JwtSettings>();
+
                 opt.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
-                    ValidIssuer = "tc-cloudgames-user", // Ensure this matches the issuer in your token
+                    ValidIssuer = jwtSettings!.Issuer, // Ensure this matches the issuer in your token
                     ValidateAudience = true,
-                    ValidAudiences = ["tc-cloudgames-games"], // Ensure this matches the audience in your token
+                    ValidAudiences = jwtSettings!.Audience, // Ensure this matches the audience in your token
                     ValidateLifetime = true,
                     IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(configuration["Jwt:SecretKey"] ?? string.Empty)), // Use the same secret key
-                    ValidateIssuerSigningKey = true
+                        Encoding.UTF8.GetBytes(jwtSettings!.SecretKey ?? string.Empty)), // Use the same secret key
+                    ValidateIssuerSigningKey = true,
+                    RoleClaimType = "role",
+                    NameClaimType = JwtRegisteredClaimNames.Name
                 };
+
+                opt.MapInboundClaims = false; // Keep original claim types
             });
 
             services.AddAuthorization()
@@ -329,6 +335,7 @@
             services.Configure<RabbitMqOptions>(configuration.GetSection("RabbitMq"));
             services.Configure<AzureServiceBusOptions>(configuration.GetSection("AzureServiceBus"));
             services.Configure<PostgresOptions>(configuration.GetSection("Database"));
+            services.Configure<JwtSettings>(configuration.GetSection("Jwt"));
             services.Configure<CacheProviderSettings>(configuration.GetSection("Cache"));
 
             return services;

@@ -49,6 +49,8 @@ global using Wolverine.Runtime.Routing;
 global using ZiggyCreatures.Caching.Fusion;
 global using ZiggyCreatures.Caching.Fusion.Serialization.SystemTextJson;
 global using CreateGame = TC.CloudGames.Games.Application.UseCases.CreateGame;
+global using Microsoft.IdentityModel.JsonWebTokens;
+global using TC.CloudGames.SharedKernel.Infrastructure.Authentication;
 //**//
 using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("TC.CloudGames.Games.Unit.Tests")]
