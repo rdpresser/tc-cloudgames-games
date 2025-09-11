@@ -1,6 +1,4 @@
-﻿using System.Text.Json;
-
-namespace TC.CloudGames.Games.Domain.ValueObjects
+﻿namespace TC.CloudGames.Games.Domain.ValueObjects
 {
     /// <summary>
     /// Value Object representing game details with validation.
@@ -38,7 +36,8 @@ namespace TC.CloudGames.Games.Domain.ValueObjects
         public static readonly ValidationError SupportsDlcsRequired = new("SupportsDlcs.Required", "Supports DLCs field is required.");
 
         public string? Genre { get; }
-        public IReadOnlyCollection<string> PlatformList { get; }
+        public IReadOnlyCollection<string> Platforms => _platforms;
+        private readonly ImmutableArray<string> _platforms;
         public string? Tags { get; }
         public string GameMode { get; }
         public string DistributionFormat { get; }
@@ -47,7 +46,7 @@ namespace TC.CloudGames.Games.Domain.ValueObjects
 
         private GameDetails(
             string? genre,
-            IReadOnlyCollection<string> platformList,
+            IEnumerable<string> platforms,
             string? tags,
             string gameMode,
             string distributionFormat,
@@ -55,7 +54,7 @@ namespace TC.CloudGames.Games.Domain.ValueObjects
             bool supportsDlcs)
         {
             Genre = genre;
-            PlatformList = platformList;
+            _platforms = platforms.ToImmutableArray();
             Tags = tags;
             GameMode = gameMode;
             DistributionFormat = distributionFormat;
@@ -67,7 +66,7 @@ namespace TC.CloudGames.Games.Domain.ValueObjects
         /// Validates game details values.
         /// </summary>
         /// <param name="genre">The genre to validate (optional).</param>
-        /// <param name="platformList">The platform list to validate.</param>
+        /// <param name="platforms">The platform list to validate.</param>
         /// <param name="tags">The tags to validate (optional).</param>
         /// <param name="gameMode">The game mode to validate.</param>
         /// <param name="distributionFormat">The distribution format to validate.</param>
@@ -76,7 +75,7 @@ namespace TC.CloudGames.Games.Domain.ValueObjects
         /// <returns>Result indicating success or validation errors.</returns>
         private static Result ValidateValue(
             string? genre,
-            IReadOnlyCollection<string>? platformList,
+            IEnumerable<string>? platforms,
             string? tags,
             string? gameMode,
             string? distributionFormat,
@@ -90,9 +89,9 @@ namespace TC.CloudGames.Games.Domain.ValueObjects
                 errors.Add(GenreMaximumLength);
 
             // Validate Platform (required and must be valid)
-            if (platformList == null || !platformList.Any())
+            if (platforms == null || !platforms.Any())
                 errors.Add(PlatformRequired);
-            else if (platformList.Any(platform => !ValidPlatforms.Contains(platform)))
+            else if (platforms.Any(platform => !ValidPlatforms.Contains(platform)))
                 errors.Add(PlatformInvalid);
 
             // Validate Tags (optional, but if provided must not exceed max length)
@@ -126,7 +125,7 @@ namespace TC.CloudGames.Games.Domain.ValueObjects
         /// Creates a new GameDetails with validation.
         /// </summary>
         /// <param name="genre">The genre (optional).</param>
-        /// <param name="platformList">The platform list.</param>
+        /// <param name="platforms">The platform list.</param>
         /// <param name="tags">The tags (optional).</param>
         /// <param name="gameMode">The game mode.</param>
         /// <param name="distributionFormat">The distribution format.</param>
@@ -135,18 +134,18 @@ namespace TC.CloudGames.Games.Domain.ValueObjects
         /// <returns>Result containing the GameDetails if valid, or validation errors if invalid.</returns>
         public static Result<GameDetails> Create(
             string? genre,
-            IReadOnlyCollection<string> platformList,
+            IEnumerable<string> platforms,
             string? tags,
             string gameMode,
             string distributionFormat,
             string? availableLanguages,
             bool supportsDlcs)
         {
-            var validation = ValidateValue(genre, platformList, tags, gameMode, distributionFormat, availableLanguages, supportsDlcs);
+            var validation = ValidateValue(genre, platforms, tags, gameMode, distributionFormat, availableLanguages, supportsDlcs);
             if (!validation.IsSuccess)
                 return Result.Invalid(validation.ValidationErrors);
 
-            return Result.Success(new GameDetails(genre, platformList, tags, gameMode, distributionFormat, availableLanguages, supportsDlcs));
+            return Result.Success(new GameDetails(genre, platforms, tags, gameMode, distributionFormat, availableLanguages, supportsDlcs));
         }
 
         /// <summary>
@@ -161,7 +160,7 @@ namespace TC.CloudGames.Games.Domain.ValueObjects
 
             return ValidateValue(
                 gameDetails.Genre,
-                gameDetails.PlatformList,
+                gameDetails.Platforms,
                 gameDetails.Tags,
                 gameDetails.GameMode,
                 gameDetails.DistributionFormat,
@@ -189,18 +188,14 @@ namespace TC.CloudGames.Games.Domain.ValueObjects
         /// <returns>Result containing the GameDetails if valid, or validation errors if invalid.</returns>
         public static Result<GameDetails> FromDb(
             string? genre,
-            string platformListJson,
+            IEnumerable<string> platforms,
             string? tags,
             string gameMode,
             string distributionFormat,
             string? availableLanguages,
             bool supportsDlcs)
         {
-            var platformList = string.IsNullOrWhiteSpace(platformListJson)
-                ? new List<string>()
-                : JsonSerializer.Deserialize<List<string>>(platformListJson) ?? new List<string>();
-
-            return Create(genre, platformList, tags, gameMode, distributionFormat, availableLanguages, supportsDlcs);
+            return Create(genre, platforms, tags, gameMode, distributionFormat, availableLanguages, supportsDlcs);
         }
 
         /// <summary>
@@ -244,18 +239,12 @@ namespace TC.CloudGames.Games.Domain.ValueObjects
         }
 
         /// <summary>
-        /// Gets the platform list as JSON string for database storage.
-        /// </summary>
-        /// <returns>JSON string representation of the platform list.</returns>
-        public string GetPlatformListAsJson() => JsonSerializer.Serialize(PlatformList);
-
-        /// <summary>
         /// Returns a string representation of the game details.
         /// </summary>
         /// <returns>String representation of the game details.</returns>
         public override string ToString()
         {
-            var platforms = string.Join(", ", PlatformList);
+            var platforms = string.Join(", ", Platforms);
             return $"{platforms} - {GameMode} - {DistributionFormat}";
         }
     }

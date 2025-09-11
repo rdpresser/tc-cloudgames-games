@@ -1,4 +1,5 @@
 ﻿global using Marten;
+global using Marten.Events.Projections;
 global using Microsoft.Extensions.DependencyInjection;
 global using System.Diagnostics.CodeAnalysis;
 global using TC.CloudGames.Games.Application.Abstractions.Ports;
@@ -14,6 +15,7 @@ global using TC.CloudGames.SharedKernel.Infrastructure.Clock;
 global using TC.CloudGames.SharedKernel.Infrastructure.Database;
 global using TC.CloudGames.SharedKernel.Infrastructure.Repositories;
 global using TC.CloudGames.SharedKernel.Infrastructure.UserClaims;
+global using static TC.CloudGames.Games.Domain.Aggregates.GameAggregate;
 //**//
 using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("TC.CloudGames.Games.Unit.Tests")]

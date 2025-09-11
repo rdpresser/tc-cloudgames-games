@@ -1,18 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Marten.Events.Projections;
-using static TC.CloudGames.Games.Domain.Aggregates.GameAggregate;
-
-namespace TC.CloudGames.Games.Infrastructure.Projections
+﻿namespace TC.CloudGames.Games.Infrastructure.Projections
 {
-    /// <summary>
-    /// Marten projection handler that builds GameProjection read models from domain events.
-    /// This handler processes all game-related domain events and maintains the current state
-    /// of game projections for optimized read operations.
-    /// </summary>
     public class GameProjectionHandler : EventProjection
     {
         public static void Project(GameCreatedDomainEvent @event, IDocumentOperations operations)
@@ -29,7 +16,7 @@ namespace TC.CloudGames.Games.Infrastructure.Projections
                 DiskSizeInGb = @event.DiskSize.SizeInGb,
                 PriceAmount = @event.Price.Amount,
                 Genre = @event.GameDetails.Genre,
-                PlatformListJson = @event.GameDetails.GetPlatformListAsJson(),
+                Platforms = @event.GameDetails.Platforms.ToArray(),
                 Tags = @event.GameDetails.Tags,
                 GameMode = @event.GameDetails.GameMode,
                 DistributionFormat = @event.GameDetails.DistributionFormat,
@@ -43,98 +30,95 @@ namespace TC.CloudGames.Games.Infrastructure.Projections
                 OfficialLink = @event.OfficialLink,
                 GameStatus = @event.GameStatus,
                 CreatedAt = @event.OccurredOn,
+                UpdatedAt = null,
                 IsActive = true
             };
+
             operations.Store(projection);
         }
 
-        public static void Project(GameBasicInfoUpdatedDomainEvent @event, IDocumentOperations operations)
+        public static async Task Project(GameBasicInfoUpdatedDomainEvent @event, IDocumentOperations operations)
         {
-            var projection = new GameProjection
-            {
-                Id = @event.AggregateId,
-                Name = @event.Name,
-                Description = @event.Description,
-                OfficialLink = @event.OfficialLink,
-                UpdatedAt = @event.OccurredOn,
-                IsActive = true // Assume still active unless deactivated event is processed
-            };
+            var projection = await operations.LoadAsync<GameProjection>(@event.AggregateId).ConfigureAwait(false);
+            if (projection == null) return;
+
+            projection.Name = @event.Name;
+            projection.Description = @event.Description;
+            projection.OfficialLink = @event.OfficialLink;
+            projection.UpdatedAt = @event.OccurredOn;
+
             operations.Store(projection);
         }
 
-        public static void Project(GamePriceUpdatedDomainEvent @event, IDocumentOperations operations)
+        public static async Task Project(GamePriceUpdatedDomainEvent @event, IDocumentOperations operations)
         {
-            var projection = new GameProjection
-            {
-                Id = @event.AggregateId,
-                PriceAmount = @event.NewPrice.Amount,
-                UpdatedAt = @event.OccurredOn,
-                IsActive = true // Assume still active unless deactivated event is processed
-            };
+            var projection = await operations.LoadAsync<GameProjection>(@event.AggregateId).ConfigureAwait(false);
+            if (projection == null) return;
+
+            projection.PriceAmount = @event.NewPrice.Amount;
+            projection.UpdatedAt = @event.OccurredOn;
+
             operations.Store(projection);
         }
 
-        public static void Project(GameStatusUpdatedDomainEvent @event, IDocumentOperations operations)
+        public static async Task Project(GameStatusUpdatedDomainEvent @event, IDocumentOperations operations)
         {
-            var projection = new GameProjection
-            {
-                Id = @event.AggregateId,
-                GameStatus = @event.NewStatus,
-                UpdatedAt = @event.OccurredOn,
-                IsActive = true // Assume still active unless deactivated event is processed
-            };
+            var projection = await operations.LoadAsync<GameProjection>(@event.AggregateId).ConfigureAwait(false);
+            if (projection == null) return;
+
+            projection.GameStatus = @event.NewStatus;
+            projection.UpdatedAt = @event.OccurredOn;
+
             operations.Store(projection);
         }
 
-        public static void Project(GameRatingUpdatedDomainEvent @event, IDocumentOperations operations)
+        public static async Task Project(GameRatingUpdatedDomainEvent @event, IDocumentOperations operations)
         {
-            var projection = new GameProjection
-            {
-                Id = @event.AggregateId,
-                RatingAverage = @event.NewRating?.Average,
-                UpdatedAt = @event.OccurredOn,
-                IsActive = true // Assume still active unless deactivated event is processed
-            };
+            var projection = await operations.LoadAsync<GameProjection>(@event.AggregateId).ConfigureAwait(false);
+            if (projection == null) return;
+
+            projection.RatingAverage = @event.NewRating?.Average;
+            projection.UpdatedAt = @event.OccurredOn;
+
             operations.Store(projection);
         }
 
-        public static void Project(GameDetailsUpdatedDomainEvent @event, IDocumentOperations operations)
+        public static async Task Project(GameDetailsUpdatedDomainEvent @event, IDocumentOperations operations)
         {
-            var projection = new GameProjection
-            {
-                Id = @event.AggregateId,
-                Genre = @event.NewGameDetails.Genre,
-                PlatformListJson = @event.NewGameDetails.GetPlatformListAsJson(),
-                Tags = @event.NewGameDetails.Tags,
-                GameMode = @event.NewGameDetails.GameMode,
-                DistributionFormat = @event.NewGameDetails.DistributionFormat,
-                AvailableLanguages = @event.NewGameDetails.AvailableLanguages,
-                SupportsDlcs = @event.NewGameDetails.SupportsDlcs,
-                UpdatedAt = @event.OccurredOn,
-                IsActive = true // Assume still active unless deactivated event is processed
-            };
+            var projection = await operations.LoadAsync<GameProjection>(@event.AggregateId).ConfigureAwait(false);
+            if (projection == null) return;
+
+            projection.Genre = @event.NewGameDetails.Genre;
+            projection.Platforms = @event.NewGameDetails.Platforms.ToArray();
+            projection.Tags = @event.NewGameDetails.Tags;
+            projection.GameMode = @event.NewGameDetails.GameMode;
+            projection.DistributionFormat = @event.NewGameDetails.DistributionFormat;
+            projection.AvailableLanguages = @event.NewGameDetails.AvailableLanguages;
+            projection.SupportsDlcs = @event.NewGameDetails.SupportsDlcs;
+            projection.UpdatedAt = @event.OccurredOn;
+
             operations.Store(projection);
         }
 
-        public static void Project(GameActivatedDomainEvent @event, IDocumentOperations operations)
+        public static async Task Project(GameActivatedDomainEvent @event, IDocumentOperations operations)
         {
-            var projection = new GameProjection
-            {
-                Id = @event.AggregateId,
-                IsActive = true,
-                UpdatedAt = @event.OccurredOn
-            };
+            var projection = await operations.LoadAsync<GameProjection>(@event.AggregateId).ConfigureAwait(false);
+            if (projection == null) return;
+
+            projection.IsActive = true;
+            projection.UpdatedAt = @event.OccurredOn;
+
             operations.Store(projection);
         }
 
-        public static void Project(GameDeactivatedDomainEvent @event, IDocumentOperations operations)
+        public static async Task Project(GameDeactivatedDomainEvent @event, IDocumentOperations operations)
         {
-            var projection = new GameProjection
-            {
-                Id = @event.AggregateId,
-                IsActive = false,
-                UpdatedAt = @event.OccurredOn
-            };
+            var projection = await operations.LoadAsync<GameProjection>(@event.AggregateId).ConfigureAwait(false);
+            if (projection == null) return;
+
+            projection.IsActive = false;
+            projection.UpdatedAt = @event.OccurredOn;
+
             operations.Store(projection);
         }
     }

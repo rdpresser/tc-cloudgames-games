@@ -29,7 +29,7 @@
         #region Factory Methods
 
         /// <summary>
-        /// Creates a new GameAggregate with proper validation using Value Objects and primitive values.
+        /// Creates a new GameAggregate using already validated Value Objects.
         /// </summary>
         public static Result<GameAggregate> Create(
             string name,
@@ -46,31 +46,62 @@
             string? officialLink = null,
             string? gameStatus = null)
         {
-            var errors = new List<ValidationError>();
-
-            if (!AgeRating.TryValidate(ageRating, out var ageRatingErrors))
-                errors.AddRange(ageRatingErrors);
-            if (!DeveloperInfo.TryValidate(developerInfo, out var developerErrors))
-                errors.AddRange(developerErrors);
-            if (!DiskSize.TryValidate(diskSize, out var diskSizeErrors))
-                errors.AddRange(diskSizeErrors);
-            if (!Price.TryValidate(price, out var priceErrors))
-                errors.AddRange(priceErrors);
-            if (!GameDetails.TryValidate(gameDetails, out var gameDetailsErrors))
-                errors.AddRange(gameDetailsErrors);
-            if (!SystemRequirements.TryValidate(systemRequirements, out var systemReqErrors))
-                errors.AddRange(systemReqErrors);
-            if (playtime != null && !Playtime.TryValidate(playtime, out var playtimeErrors))
-                errors.AddRange(playtimeErrors);
-            if (rating != null && !Rating.TryValidate(rating, out var ratingErrors))
-                errors.AddRange(ratingErrors);
-
-            errors.AddRange(ValidateGameProperties(name, releaseDate, description, officialLink, gameStatus));
-            if (errors.Count > 0)
+            var errors = ValidateGameProperties(name, releaseDate, description, officialLink, gameStatus).ToList();
+            if (errors.Any())
                 return Result.Invalid(errors.ToArray());
 
             return CreateAggregate(name, releaseDate, ageRating, developerInfo, diskSize, price,
                 gameDetails, systemRequirements, description, playtime, rating, officialLink, gameStatus);
+        }
+
+        /// <summary>
+        /// Creates a new GameAggregate using Result<ValueObject> instances.
+        /// </summary>
+        public static Result<GameAggregate> CreateFromResult(
+            string name,
+            DateOnly releaseDate,
+            Result<AgeRating> ageRatingResult,
+            Result<DeveloperInfo> developerInfoResult,
+            Result<DiskSize> diskSizeResult,
+            Result<Price> priceResult,
+            Result<GameDetails> gameDetailsResult,
+            Result<SystemRequirements> systemRequirementsResult,
+            Result<Playtime>? playtimeResult = null,
+            Result<Rating>? ratingResult = null,
+            string? description = null,
+            string? officialLink = null,
+            string? gameStatus = null)
+        {
+            var errors = new List<ValidationError>();
+            errors.AddErrorsIfFailure(ageRatingResult);
+            errors.AddErrorsIfFailure(developerInfoResult);
+            errors.AddErrorsIfFailure(diskSizeResult);
+            errors.AddErrorsIfFailure(priceResult);
+            errors.AddErrorsIfFailure(gameDetailsResult);
+            errors.AddErrorsIfFailure(systemRequirementsResult);
+
+            if (playtimeResult != null) errors.AddErrorsIfFailure(playtimeResult);
+            if (ratingResult != null) errors.AddErrorsIfFailure(ratingResult);
+
+            errors.AddRange(ValidateGameProperties(name, releaseDate, description, officialLink, gameStatus));
+            if (errors.Any())
+                return Result.Invalid(errors.ToArray());
+
+            return CreateAggregate(
+                name,
+                releaseDate,
+                ageRatingResult.Value,
+                developerInfoResult.Value,
+                diskSizeResult.Value,
+                priceResult.Value,
+                gameDetailsResult.Value,
+                systemRequirementsResult.Value,
+                description,
+                playtimeResult?.Value,
+                ratingResult?.Value,
+                officialLink,
+                gameStatus
+            );
         }
 
         /// <summary>
@@ -85,7 +116,7 @@
             decimal diskSizeInGb,
             decimal priceAmount,
             string? genre,
-            IReadOnlyCollection<string> platformList,
+            IEnumerable<string> platforms,
             string? tags,
             string gameMode,
             string distributionFormat,
@@ -104,98 +135,33 @@
             var developerInfoResult = DeveloperInfo.Create(developer, publisher);
             var diskSizeResult = DiskSize.Create(diskSizeInGb);
             var priceResult = Price.Create(priceAmount);
-            var gameDetailsResult = GameDetails.Create(genre, platformList, tags, gameMode, distributionFormat, availableLanguages, supportsDlcs);
+            var gameDetailsResult = GameDetails.Create(genre, platforms, tags, gameMode, distributionFormat, availableLanguages, supportsDlcs);
             var systemReqResult = SystemRequirements.Create(minimumSystemReq, recommendedSystemReq);
 
-            Playtime? playtime = null;
-            Rating? rating = null;
-
-            var errors = new List<ValidationError>();
-            errors.AddErrorsIfFailure(ageRatingResult);
-            errors.AddErrorsIfFailure(developerInfoResult);
-            errors.AddErrorsIfFailure(diskSizeResult);
-            errors.AddErrorsIfFailure(priceResult);
-            errors.AddErrorsIfFailure(gameDetailsResult);
-            errors.AddErrorsIfFailure(systemReqResult);
+            Result<Playtime>? playtimeResult = null;
+            Result<Rating>? ratingResult = null;
 
             if (playtimeHours.HasValue || playerCount.HasValue)
-            {
-                var playtimeResult = Playtime.Create(playtimeHours, playerCount);
-                errors.AddErrorsIfFailure(playtimeResult);
-                if (playtimeResult.IsSuccess)
-                    playtime = playtimeResult.Value;
-            }
+                playtimeResult = Playtime.Create(playtimeHours, playerCount);
 
             if (ratingAverage.HasValue)
-            {
-                var ratingResult = Rating.Create(ratingAverage);
-                errors.AddErrorsIfFailure(ratingResult);
-                if (ratingResult.IsSuccess)
-                    rating = ratingResult.Value;
-            }
+                ratingResult = Rating.Create(ratingAverage);
 
-            errors.AddRange(ValidateGameProperties(name, releaseDate, description, officialLink, gameStatus));
-
-            if (errors.Count > 0)
-                return Result.Invalid(errors.ToArray());
-
-            return CreateAggregate(name, releaseDate, ageRatingResult.Value, developerInfoResult.Value,
-                diskSizeResult.Value, priceResult.Value, gameDetailsResult.Value, systemReqResult.Value,
-                description, playtime, rating, officialLink, gameStatus);
-        }
-
-        /// <summary>
-        /// Factory method to reconstruct aggregate from projection data (for read operations).
-        /// </summary>
-        public static GameAggregate FromProjection(
-            Guid id,
-            string name,
-            DateOnly releaseDate,
-            string ageRatingValue,
-            string? description,
-            string developer,
-            string? publisher,
-            decimal diskSizeInGb,
-            decimal priceAmount,
-            string? genre,
-            string platformListJson,
-            string? tags,
-            string gameMode,
-            string distributionFormat,
-            string? availableLanguages,
-            bool supportsDlcs,
-            string minimumSystemReq,
-            string? recommendedSystemReq,
-            int? playtimeHours,
-            int? playerCount,
-            decimal? ratingAverage,
-            string? officialLink,
-            string? gameStatus,
-            DateTime createdAt,
-            DateTime? updatedAt,
-            bool isActive)
-        {
-            var game = new GameAggregate(id)
-            {
-                Name = name,
-                ReleaseDate = releaseDate,
-                AgeRating = AgeRating.FromDb(ageRatingValue).Value,
-                Description = description,
-                DeveloperInfo = DeveloperInfo.FromDb(developer, publisher).Value,
-                DiskSize = DiskSize.FromDb(diskSizeInGb).Value,
-                Price = Price.FromDb(priceAmount).Value,
-                GameDetails = GameDetails.FromDb(genre, platformListJson, tags, gameMode, distributionFormat, availableLanguages, supportsDlcs).Value,
-                SystemRequirements = SystemRequirements.FromDb(minimumSystemReq, recommendedSystemReq).Value,
-                Playtime = playtimeHours.HasValue || playerCount.HasValue ? Playtime.FromDb(playtimeHours, playerCount).Value : null,
-                Rating = ratingAverage.HasValue ? Rating.FromDb(ratingAverage).Value : null,
-                OfficialLink = officialLink,
-                GameStatus = gameStatus
-            };
-
-            game.SetActive(isActive);
-            game.SetCreatedAt(createdAt);
-            game.SetUpdatedAt(updatedAt);
-            return game;
+            return CreateFromResult(
+                name,
+                releaseDate,
+                ageRatingResult,
+                developerInfoResult,
+                diskSizeResult,
+                priceResult,
+                gameDetailsResult,
+                systemReqResult,
+                playtimeResult,
+                ratingResult,
+                description,
+                officialLink,
+                gameStatus
+            );
         }
 
         #endregion
@@ -203,11 +169,11 @@
         #region Business Operations
 
         /// <summary>
-        /// Updates game basic information with validation.
+        /// Updates game basic information.
         /// </summary>
         public Result UpdateBasicInfo(string name, string? description, string? officialLink)
         {
-            var errors = ValidateBasicInfo(name, description, officialLink);
+            var errors = ValidateBasicInfo(name, description, officialLink).ToList();
             if (errors.Any())
                 return Result.Invalid(errors.ToArray());
 
@@ -217,7 +183,7 @@
         }
 
         /// <summary>
-        /// Updates game pricing information.
+        /// Updates game price.
         /// </summary>
         public Result UpdatePrice(decimal newPriceAmount)
         {
@@ -231,11 +197,11 @@
         }
 
         /// <summary>
-        /// Updates game status with validation.
+        /// Updates game status.
         /// </summary>
         public Result UpdateGameStatus(string newStatus)
         {
-            var errors = ValidateGameStatus(newStatus);
+            var errors = ValidateGameStatus(newStatus).ToList();
             if (errors.Any())
                 return Result.Invalid(errors.ToArray());
 
@@ -267,18 +233,18 @@
         }
 
         /// <summary>
-        /// Updates game details information.
+        /// Updates game details.
         /// </summary>
         public Result UpdateGameDetails(
             string? genre,
-            IReadOnlyCollection<string> platformList,
+            IEnumerable<string> platforms,
             string? tags,
             string gameMode,
             string distributionFormat,
             string? availableLanguages,
             bool supportsDlcs)
         {
-            var gameDetailsResult = GameDetails.Create(genre, platformList, tags, gameMode, distributionFormat, availableLanguages, supportsDlcs);
+            var gameDetailsResult = GameDetails.Create(genre, platforms, tags, gameMode, distributionFormat, availableLanguages, supportsDlcs);
             if (!gameDetailsResult.IsSuccess)
                 return Result.Invalid(gameDetailsResult.ValidationErrors.ToArray());
 
@@ -288,7 +254,7 @@
         }
 
         /// <summary>
-        /// Activates a deactivated game.
+        /// Activates the game.
         /// </summary>
         public Result Activate()
         {
@@ -301,12 +267,12 @@
         }
 
         /// <summary>
-        /// Deactivates an active game.
+        /// Deactivates the game.
         /// </summary>
         public Result Deactivate()
         {
             if (!IsActive)
-                return Result.Invalid(new ValidationError("Game.AlreadyInactive", "Game is already deactivated."));
+                return Result.Invalid(new ValidationError("Game.AlreadyInactive", "Game is already inactive."));
 
             var @event = new GameDeactivatedDomainEvent(Id, DateTime.UtcNow);
             ApplyEvent(@event);
@@ -317,9 +283,6 @@
 
         #region Private Helpers
 
-        /// <summary>
-        /// Creates and returns a new GameAggregate instance and applies the GameCreatedEvent.
-        /// </summary>
         private static Result<GameAggregate> CreateAggregate(
             string name,
             DateOnly releaseDate,
@@ -344,9 +307,6 @@
             return Result.Success(aggregate);
         }
 
-        /// <summary>
-        /// Validates game-specific properties and returns validation errors.
-        /// </summary>
         private static IEnumerable<ValidationError> ValidateGameProperties(
             string name, DateOnly releaseDate, string? description, string? officialLink, string? gameStatus)
         {
@@ -362,9 +322,6 @@
                 yield return error;
         }
 
-        /// <summary>
-        /// Validates basic info properties.
-        /// </summary>
         private static IEnumerable<ValidationError> ValidateBasicInfo(string name, string? description, string? officialLink)
         {
             foreach (var error in ValidateName(name))
@@ -375,9 +332,6 @@
                 yield return error;
         }
 
-        /// <summary>
-        /// Validates game name.
-        /// </summary>
         private static IEnumerable<ValidationError> ValidateName(string name)
         {
             const int maxLength = 200;
@@ -387,9 +341,6 @@
                 yield return new ValidationError("Name.MaximumLength", $"Name cannot exceed {maxLength} characters.");
         }
 
-        /// <summary>
-        /// Validates release date.
-        /// </summary>
         private static IEnumerable<ValidationError> ValidateReleaseDate(DateOnly releaseDate)
         {
             if (releaseDate == DateOnly.MinValue)
@@ -398,9 +349,6 @@
                 yield return new ValidationError("ReleaseDate.ValidDate", "Release date must be a valid date.");
         }
 
-        /// <summary>
-        /// Validates description.
-        /// </summary>
         private static IEnumerable<ValidationError> ValidateDescription(string? description)
         {
             const int maxLength = 2000;
@@ -408,9 +356,6 @@
                 yield return new ValidationError("Description.MaximumLength", $"Description cannot exceed {maxLength} characters.");
         }
 
-        /// <summary>
-        /// Validates official link.
-        /// </summary>
         private static IEnumerable<ValidationError> ValidateOfficialLink(string? officialLink)
         {
             const int maxLength = 200;
@@ -423,9 +368,6 @@
             }
         }
 
-        /// <summary>
-        /// Validates game status.
-        /// </summary>
         private static IEnumerable<ValidationError> ValidateGameStatus(string? gameStatus)
         {
             const int maxLength = 200;
@@ -442,9 +384,6 @@
 
         #region Event Application
 
-        /// <summary>
-        /// Applies an event to the aggregate and adds it to uncommitted events.
-        /// </summary>
         private void ApplyEvent(BaseDomainEvent @event)
         {
             AddNewEvent(@event);
@@ -540,6 +479,63 @@
             SetDeactivate();
             SetUpdatedAt(@event.OccurredOn);
         }
+
+        /// <summary>
+        /// Factory method to reconstruct aggregate from projection data (for read operations)
+        /// No validation needed as data comes from a trusted source (database)
+        /// </summary>
+        public static GameAggregate FromProjection(
+            Guid id,
+            string name,
+            DateOnly releaseDate,
+            string ageRating,
+            string? description,
+            string developer,
+            string? publisher,
+            decimal diskSizeInGb,
+            decimal priceAmount,
+            string? genre,
+            string[] platforms,
+            string? tags,
+            string gameMode,
+            string distributionFormat,
+            string? availableLanguages,
+            bool supportsDlcs,
+            string minimumSystemRequirements,
+            string? recommendedSystemRequirements,
+            int? playtimeHours,
+            int? playerCount,
+            decimal? ratingAverage,
+            string? officialLink,
+            string? gameStatus,
+            DateTime createdAt,
+            DateTime? updatedAt,
+            bool isActive)
+        {
+            var game = new GameAggregate(id)
+            {
+                Name = name,
+                ReleaseDate = releaseDate,
+                AgeRating = AgeRating.FromDb(ageRating),
+                Description = description,
+                DeveloperInfo = DeveloperInfo.FromDb(developer, publisher),
+                DiskSize = DiskSize.FromDb(diskSizeInGb),
+                Price = Price.FromDb(priceAmount),
+                GameDetails = GameDetails.FromDb(genre, platforms, tags, gameMode, distributionFormat, availableLanguages, supportsDlcs),
+                SystemRequirements = SystemRequirements.FromDb(minimumSystemRequirements, recommendedSystemRequirements),
+                Playtime = Playtime.FromDb(playtimeHours, playerCount),
+                Rating = Rating.FromDb(ratingAverage),
+                OfficialLink = officialLink,
+                GameStatus = gameStatus
+            };
+
+            game.SetActive(isActive);
+            game.SetCreatedAt(createdAt);
+            game.SetUpdatedAt(updatedAt);
+
+            return game;
+        }
+
 
         #endregion
 

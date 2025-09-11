@@ -53,7 +53,7 @@
                 GameDetails: new CreateGame.GameDetails
                 (
                     Genre: "Genre",
-                    Platform: [.. Domain.ValueObjects.GameDetails.ValidPlatforms],
+                    Platforms: [.. Domain.ValueObjects.GameDetails.ValidPlatforms],
                     Tags: "Tags",
                     GameMode: $"Choose one of valid game modes: {Domain.ValueObjects.GameDetails.ValidGameModes.JoinWithQuotes()}",
                     DistributionFormat: $"Choose one of valid distribution format: {Domain.ValueObjects.GameDetails.ValidDistributionFormats.JoinWithQuotes()}",
@@ -81,7 +81,7 @@
                 Playtime: new CreateGame.Playtime(10, 1),
                 GameDetails: new CreateGame.GameDetails(
                     Genre: "Genre",
-                    Platform: [.. Domain.ValueObjects.GameDetails.ValidPlatforms],
+                    Platforms: [.. Domain.ValueObjects.GameDetails.ValidPlatforms],
                     Tags: "Tags",
                     GameMode: Domain.ValueObjects.GameDetails.ValidGameModes.First(),
                     DistributionFormat: Domain.ValueObjects.GameDetails.ValidDistributionFormats.First(),

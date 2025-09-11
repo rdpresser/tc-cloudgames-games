@@ -5,51 +5,50 @@
         public GameRepository(IDocumentSession session)
             : base(session)
         {
-
         }
 
-        public override Task<IEnumerable<GameAggregate>> GetAllAsync(CancellationToken cancellationToken = default)
+        public override async Task<IEnumerable<GameAggregate>> GetAllAsync(CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            var gameProjections = await Session.Query<GameProjection>()
+                .Where(g => g.IsActive)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            return gameProjections.Select(g =>
+                GameAggregate.FromProjection(
+                    g.Id,
+                    g.Name,
+                    g.ReleaseDate,
+                    g.AgeRating,
+                    g.Description,
+                    g.Developer,
+                    g.Publisher,
+                    g.DiskSizeInGb,
+                    g.PriceAmount,
+                    g.Genre,
+                    g.Platforms,
+                    g.Tags,
+                    g.GameMode,
+                    g.DistributionFormat,
+                    g.AvailableLanguages,
+                    g.SupportsDlcs,
+                    g.MinimumSystemRequirements,
+                    g.RecommendedSystemRequirements,
+                    g.PlaytimeHours,
+                    g.PlayerCount,
+                    g.RatingAverage,
+                    g.OfficialLink,
+                    g.GameStatus,
+                    g.CreatedAt,
+                    g.UpdatedAt,
+                    g.IsActive
+                ));
         }
 
-        /// <summary>
-        /// Retrieves a game by its unique identifier using GameProjection for optimized read operations.
-        /// Only returns active games.
-        /// </summary>
-        /// <param name="id">The unique identifier of the game</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Game details if found and active, null otherwise</returns>
         public async Task<GameByIdResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         {
             var projection = await Session.Query<GameProjection>()
                 .Where(g => g.IsActive && g.Id == id)
-                .Select(x => new
-                {
-                    x.Id,
-                    x.Name,
-                    x.ReleaseDate,
-                    x.AgeRating,
-                    x.Description,
-                    x.Developer,
-                    x.Publisher,
-                    x.DiskSizeInGb,
-                    x.PriceAmount,
-                    x.Genre,
-                    x.PlatformListJson,
-                    x.Tags,
-                    x.GameMode,
-                    x.DistributionFormat,
-                    x.AvailableLanguages,
-                    x.SupportsDlcs,
-                    x.MinimumSystemRequirements,
-                    x.RecommendedSystemRequirements,
-                    x.PlaytimeHours,
-                    x.PlayerCount,
-                    x.RatingAverage,
-                    x.OfficialLink,
-                    x.GameStatus
-                })
                 .FirstOrDefaultAsync(cancellationToken)
                 .ConfigureAwait(false);
 
@@ -71,7 +70,7 @@
                     : null,
                 GameDetails = new GameDetails(
                     projection.Genre,
-                    System.Text.Json.JsonSerializer.Deserialize<string[]>(projection.PlatformListJson) ?? Array.Empty<string>(),
+                    projection.Platforms,
                     projection.Tags,
                     projection.GameMode,
                     projection.DistributionFormat,
@@ -85,19 +84,12 @@
             };
         }
 
-        /// <summary>
-        /// Retrieves a paginated, filtered, and sorted list of games using GameProjection for optimized read operations.
-        /// </summary>
-        /// <param name="query">Query parameters for filtering, sorting, and pagination</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Paginated list of games</returns>
         public async Task<IReadOnlyList<GameListResponse>> GetGameListAsync(GetGameListQuery query, CancellationToken cancellationToken = default)
         {
-            // Start with active games
             var gamesQuery = Session.Query<GameProjection>()
                 .Where(g => g.IsActive);
 
-            // Dynamic filtering (search across multiple fields)
+            // Dynamic filtering
             if (!string.IsNullOrWhiteSpace(query.Filter))
             {
                 var filter = query.Filter.ToLower();
@@ -131,21 +123,6 @@
                 "rating" => query.SortDirection.ToLower() == "desc"
                     ? gamesQuery.OrderByDescending(g => g.RatingAverage)
                     : gamesQuery.OrderBy(g => g.RatingAverage),
-                "agerating" => query.SortDirection.ToLower() == "desc"
-                    ? gamesQuery.OrderByDescending(g => g.AgeRating)
-                    : gamesQuery.OrderBy(g => g.AgeRating),
-                "genre" => query.SortDirection.ToLower() == "desc"
-                    ? gamesQuery.OrderByDescending(g => g.Genre)
-                    : gamesQuery.OrderBy(g => g.Genre),
-                "gamemode" => query.SortDirection.ToLower() == "desc"
-                    ? gamesQuery.OrderByDescending(g => g.GameMode)
-                    : gamesQuery.OrderBy(g => g.GameMode),
-                "gamestatus" => query.SortDirection.ToLower() == "desc"
-                    ? gamesQuery.OrderByDescending(g => g.GameStatus)
-                    : gamesQuery.OrderBy(g => g.GameStatus),
-                "createdat" => query.SortDirection.ToLower() == "desc"
-                    ? gamesQuery.OrderByDescending(g => g.CreatedAt)
-                    : gamesQuery.OrderBy(g => g.CreatedAt),
                 _ => query.SortDirection.ToLower() == "desc"
                     ? gamesQuery.OrderByDescending(g => g.Id)
                     : gamesQuery.OrderBy(g => g.Id)
@@ -156,13 +133,9 @@
                 .Skip((query.PageNumber - 1) * query.PageSize)
                 .Take(query.PageSize);
 
-            // Execute query and get projections
-            var gameProjections = await gamesQuery
-                .ToListAsync(cancellationToken)
-                .ConfigureAwait(false);
+            var gameProjections = await gamesQuery.ToListAsync(cancellationToken);
 
-            // Map to GameListResponse with proper JSON deserialization
-            var gameList = gameProjections.Select(g => new GameListResponse
+            return gameProjections.Select(g => new GameListResponse
             {
                 Id = g.Id,
                 Name = g.Name,
@@ -177,7 +150,7 @@
                     : null,
                 GameDetails = new GameDetails(
                     g.Genre,
-                    System.Text.Json.JsonSerializer.Deserialize<string[]>(g.PlatformListJson) ?? Array.Empty<string>(),
+                    g.Platforms,
                     g.Tags,
                     g.GameMode,
                     g.DistributionFormat,
@@ -189,8 +162,6 @@
                 OfficialLink = g.OfficialLink,
                 GameStatus = g.GameStatus
             }).ToList();
-
-            return gameList;
         }
     }
 }

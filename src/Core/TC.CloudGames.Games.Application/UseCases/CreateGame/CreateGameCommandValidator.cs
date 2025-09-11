@@ -172,16 +172,16 @@
                                 .WithErrorCode($"{nameof(GameDetails.Genre)}.MaximumLength");
                     });
 
-                    RuleFor(x => x.GameDetails.Platform)
+                    RuleFor(x => x.GameDetails.Platforms)
                         .NotEmpty()
                             .WithMessage("Platform is required.")
-                            .WithErrorCode($"{nameof(GameDetails.Platform)}.Required")
+                            .WithErrorCode($"{nameof(GameDetails.Platforms)}.Required")
                         .DependentRules(() =>
                         {
-                            RuleFor(x => x.GameDetails.Platform)
+                            RuleFor(x => x.GameDetails.Platforms)
                                 .Must(platform => Domain.ValueObjects.GameDetails.ValidPlatforms.All(x => platform.Contains(x)))
                                     .WithMessage($"Invalid platform specified. Valid platforms are: {Domain.ValueObjects.GameDetails.ValidPlatforms.JoinWithQuotes()}.")
-                                    .WithErrorCode($"{nameof(GameDetails.Platform)}.ValidPlatform");
+                                    .WithErrorCode($"{nameof(GameDetails.Platforms)}.ValidPlatform");
                         });
 
                     When(x => x.GameDetails.Tags != null, () =>

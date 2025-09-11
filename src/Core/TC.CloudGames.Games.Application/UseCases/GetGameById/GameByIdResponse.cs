@@ -48,10 +48,10 @@
             //Marten
         }
 
-        public GameDetails(string? genre, string[] platform, string? tags, string gameMode, string distributionFormat, string? availableLanguages, bool supportsDlcs)
+        public GameDetails(string? genre, string[] platforms, string? tags, string gameMode, string distributionFormat, string? availableLanguages, bool supportsDlcs)
         {
             Genre = genre;
-            PlatformString = JsonSerializer.Serialize(platform);
+            Platforms = platforms;
             Tags = tags;
             GameMode = gameMode;
             DistributionFormat = distributionFormat;
@@ -60,38 +60,11 @@
         }
 
         public string? Genre { get; init; }
-
-        [JsonIgnore]
-        public string PlatformString { get; private set; } = string.Empty;
-
         public string? Tags { get; init; }
         public string GameMode { get; init; } = null!;
         public string DistributionFormat { get; init; } = null!;
         public string? AvailableLanguages { get; init; }
         public bool SupportsDlcs { get; init; }
-
-        [ExcludeFromCodeCoverage]
-        public string[] Platform
-        {
-            get
-            {
-                if (PlatformString == null)
-                {
-                    return [];
-                }
-                return JsonSerializer.Deserialize<string[]>(PlatformString) ?? [];
-            }
-            set
-            {
-                if (value == null)
-                {
-                    PlatformString = string.Empty;
-                }
-                else
-                {
-                    PlatformString = JsonSerializer.Serialize(value);
-                }
-            }
-        }
+        public string[] Platforms { get; init; } = Array.Empty<string>();
     }
 }

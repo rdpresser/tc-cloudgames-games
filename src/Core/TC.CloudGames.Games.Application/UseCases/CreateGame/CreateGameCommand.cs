@@ -26,7 +26,7 @@
 
     public sealed record GameDetails(
         string? Genre,
-        string[] Platform,
+        string[] Platforms,
         string? Tags,
         string GameMode,
         string DistributionFormat,

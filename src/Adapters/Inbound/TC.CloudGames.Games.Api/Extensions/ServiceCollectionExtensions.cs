@@ -258,21 +258,40 @@
 
                 var options = new StoreOptions();
                 options.Connection(connProvider.ConnectionString);
-                options.Logger(new ConsoleMartenLogger()); // optional: log SQL for debugging
+                options.Logger(new ConsoleMartenLogger());
 
-                // Event Store configuration (events schema)
                 options.Events.DatabaseSchemaName = "events";
-
-                // Document store configuration (documents schema)
                 options.DatabaseSchemaName = "documents";
 
-                // Register projection documents
-                options.Schema.For<GameProjection>().DatabaseSchemaName("documents");
-
-                // Register inline projections
                 options.Projections.Add<GameProjectionHandler>(ProjectionLifecycle.Inline);
 
-                // Auto-create databases/schemas if missing
+                options.Schema.For<GameProjection>()
+                    .DatabaseSchemaName("documents")
+                    // Campos duplicados para filtros e ordenação
+                    .Duplicate(x => x.Name, pgType: "varchar(200)")
+                    .Duplicate(x => x.Developer, pgType: "varchar(200)")
+                    .Duplicate(x => x.Publisher, pgType: "varchar(200)")
+                    .Duplicate(x => x.Genre, pgType: "varchar(100)")
+                    .Duplicate(x => x.GameMode, pgType: "varchar(50)")
+                    .Duplicate(x => x.DistributionFormat, pgType: "varchar(50)")
+                    .Duplicate(x => x.GameStatus, pgType: "varchar(50)")
+                    .Duplicate(x => x.PriceAmount, pgType: "numeric")
+                    .Duplicate(x => x.RatingAverage, pgType: "numeric")
+                    .Duplicate(x => x.CreatedAt, pgType: "timestamptz")
+                    .Duplicate(x => x.UpdatedAt, pgType: "timestamptz")
+                    .Duplicate(x => x.IsActive, pgType: "boolean");
+
+                // Computed indexes (case-insensitive)
+                options.Schema.For<GameProjection>()
+                    .Index(x => x.Name, x => { x.Casing = ComputedIndex.Casings.Lower; x.Method = IndexMethod.btree; })
+                    .Index(x => x.Developer, x => { x.Casing = ComputedIndex.Casings.Lower; x.Method = IndexMethod.btree; })
+                    .Index(x => x.Publisher, x => { x.Casing = ComputedIndex.Casings.Lower; x.Method = IndexMethod.btree; })
+                    .Index(x => x.Genre, x => { x.Casing = ComputedIndex.Casings.Lower; x.Method = IndexMethod.btree; })
+                    .Index(x => x.GameMode, x => { x.Casing = ComputedIndex.Casings.Lower; x.Method = IndexMethod.btree; });
+
+                // GIN index on JSONB
+                options.Schema.For<GameProjection>().GinIndexJsonData();
+
                 options.CreateDatabasesForTenants(c =>
                 {
                     c.MaintenanceDatabase(connProvider.MaintenanceConnectionString);
@@ -285,12 +304,12 @@
 
                 return options;
             })
-            .UseLightweightSessions() // optional, lightweight sessions for better performance
-            .IntegrateWithWolverine(cfg => // enables transactional outbox + inbox with Wolverine
+            .UseLightweightSessions()
+            .IntegrateWithWolverine(cfg =>
             {
                 cfg.UseWolverineManagedEventSubscriptionDistribution = true;
             })
-            .ApplyAllDatabaseChangesOnStartup(); // optional, automatically applies schema changes at startup
+            .ApplyAllDatabaseChangesOnStartup();
 
             return services;
         }
