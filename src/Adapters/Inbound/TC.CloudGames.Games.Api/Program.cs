@@ -1,41 +1,34 @@
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+// Configure environment variables (will skip if running under .NET Aspire)
+builder.ConfigureEnvironmentVariables();
+
+// Configure Serilog as logging provider
+builder.Host.UseCustomSerilog(builder.Configuration);
+
+//***************** ADICIONAR **************************************************/
+//builder.AddCustomLoggingTelemetry()
+//********************************************************************************/
+
+// Register application, infrastructure and API services
+builder.Services.AddGameServices(builder);
+builder.Services.AddApplication();
+builder.Services.AddInfrastructure();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (!builder.Environment.IsEnvironment("Testing"))
 {
-    app.MapOpenApi();
+    await app.CreateMessageDatabase().ConfigureAwait(false);
 }
 
-app.UseHttpsRedirection();
+// Use metrics authentication middleware extension
+app.UseMetricsAuthentication();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+app.UseAuthentication()
+  .UseAuthorization()
+  .UseCustomFastEndpoints()
+  .UseCustomMiddlewares();
 
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
-
-app.Run();
-
-internal record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
+// Run the application
+await app.RunAsync().ConfigureAwait(false);
