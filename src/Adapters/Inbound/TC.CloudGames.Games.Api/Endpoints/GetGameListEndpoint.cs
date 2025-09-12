@@ -4,13 +4,9 @@
     {
         private static readonly string[] AvailableLanguagesList = ["English", "Spanish", "French", "German", "Japanese"];
 
-        public GetGameListEndpoint()
-        {
-        }
-
         public override void Configure()
         {
-            Get("game/list");
+            Get("game");
             Roles(AppConstants.AdminRole);
             PreProcessor<QueryCachingPreProcessorBehavior<GetGameListQuery, IReadOnlyList<GameListResponse>>>();
             PostProcessor<QueryCachingPostProcessorBehavior<GetGameListQuery, IReadOnlyList<GameListResponse>>>();
