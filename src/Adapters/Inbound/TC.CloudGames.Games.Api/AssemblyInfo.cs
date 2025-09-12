@@ -1,4 +1,5 @@
 ﻿global using Ardalis.Result;
+global using Bogus;
 global using FastEndpoints;
 global using FastEndpoints.Swagger;
 global using FluentValidation;
@@ -21,6 +22,7 @@ global using Serilog.Enrichers.Span;
 global using Serilog.Events;
 global using Serilog.Sinks.Grafana.Loki;
 global using System.Diagnostics.CodeAnalysis;
+global using System.Net;
 global using System.Text;
 global using TC.CloudGames.Contracts.Events.Games;
 global using TC.CloudGames.Games.Api.Extensions;
@@ -28,6 +30,7 @@ global using TC.CloudGames.Games.Api.Middleware;
 global using TC.CloudGames.Games.Application;
 global using TC.CloudGames.Games.Application.Abstractions;
 global using TC.CloudGames.Games.Application.UseCases.CreateGame;
+global using TC.CloudGames.Games.Application.UseCases.GetGameList;
 global using TC.CloudGames.Games.Domain.Aggregates;
 global using TC.CloudGames.Games.Domain.ValueObjects;
 global using TC.CloudGames.Games.Infrastructure;
@@ -53,6 +56,7 @@ global using Wolverine.Runtime.Routing;
 global using ZiggyCreatures.Caching.Fusion;
 global using ZiggyCreatures.Caching.Fusion.Serialization.SystemTextJson;
 global using CreateGame = TC.CloudGames.Games.Application.UseCases.CreateGame;
+global using GameDetails = TC.CloudGames.Games.Domain.ValueObjects.GameDetails;
 //**//
 using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("TC.CloudGames.Games.Unit.Tests")]

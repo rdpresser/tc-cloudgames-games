@@ -268,11 +268,7 @@
                 options.Schema.For<GameProjection>()
                     .DatabaseSchemaName("documents")
                     // Campos duplicados para filtros e ordenação
-                    ////.Duplicate(x => x.Name, pgType: "varchar(200)")
-                    ////.Duplicate(x => x.Developer, pgType: "varchar(200)")
-                    ////.Duplicate(x => x.Publisher, pgType: "varchar(200)")
-                    ////.Duplicate(x => x.Genre, pgType: "varchar(100)")
-                    ////.Duplicate(x => x.GameMode, pgType: "varchar(50)")
+                    .Duplicate(x => x.Publisher, pgType: "varchar(200)")
                     .Duplicate(x => x.DistributionFormat, pgType: "varchar(50)")
                     .Duplicate(x => x.GameStatus, pgType: "varchar(50)")
                     .Duplicate(x => x.PriceAmount, pgType: "numeric")
@@ -283,11 +279,10 @@
 
                 // Computed indexes (case-insensitive)
                 options.Schema.For<GameProjection>()
-                    .Index(x => x.Name, x => { x.Casing = ComputedIndex.Casings.Lower; x.Method = IndexMethod.btree; })
-                    .Index(x => x.Developer, x => { x.Casing = ComputedIndex.Casings.Lower; x.Method = IndexMethod.btree; })
-                    .Index(x => x.Publisher, x => { x.Casing = ComputedIndex.Casings.Lower; x.Method = IndexMethod.btree; })
-                    .Index(x => x.Genre, x => { x.Casing = ComputedIndex.Casings.Lower; x.Method = IndexMethod.btree; })
-                    .Index(x => x.GameMode, x => { x.Casing = ComputedIndex.Casings.Lower; x.Method = IndexMethod.btree; });
+                    .Index(x => x.Name, x => { x.Casing = ComputedIndex.Casings.Lower; x.Method = IndexMethod.btree; x.Name = "idx_gameprojection_name_lower"; })
+                    .Index(x => x.Developer, x => { x.Casing = ComputedIndex.Casings.Lower; x.Method = IndexMethod.btree; x.Name = "idx_gameprojection_developer_lower"; })
+                    .Index(x => x.Genre, x => { x.Casing = ComputedIndex.Casings.Lower; x.Method = IndexMethod.btree; x.Name = "idx_gameprojection_genre_lower"; })
+                    .Index(x => x.GameMode, x => { x.Casing = ComputedIndex.Casings.Lower; x.Method = IndexMethod.btree; x.Name = "idx_gameprojection_gamemode_lower"; });
 
                 // GIN index on JSONB
                 options.Schema.For<GameProjection>().GinIndexJsonData();

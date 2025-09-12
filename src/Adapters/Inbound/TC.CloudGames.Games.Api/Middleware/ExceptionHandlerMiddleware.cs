@@ -46,7 +46,7 @@
         {
             return exception switch
             {
-                ValidationException validationException => new ExceptionDetails(
+                Exceptions.ValidationException validationException => new ExceptionDetails(
                     StatusCodes.Status400BadRequest,
                     "ValidationFailure",
                     "Validation error",
