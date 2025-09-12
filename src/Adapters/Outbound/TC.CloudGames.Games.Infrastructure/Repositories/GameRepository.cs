@@ -93,7 +93,10 @@
             if (!string.IsNullOrWhiteSpace(query.Filter))
             {
                 var filter = query.Filter.ToLower();
+                bool isGuid = Guid.TryParse(filter, out var guid);
+
                 gamesQuery = gamesQuery.Where(g =>
+                    (isGuid && g.Id == guid) ||
                     g.Name.ToLower().Contains(filter) ||
                     g.Developer.ToLower().Contains(filter) ||
                     (g.Publisher != null && g.Publisher.ToLower().Contains(filter)) ||
