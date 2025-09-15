@@ -1,4 +1,6 @@
-﻿namespace TC.CloudGames.Games.Api.Extensions
+﻿using TC.CloudGames.Games.Application.MessageBrokerHandlers;
+
+namespace TC.CloudGames.Games.Api.Extensions
 {
     internal static class ServiceCollectionExtensions
     {
@@ -129,6 +131,7 @@
         {
             builder.Host.UseWolverine(opts =>
             {
+                opts.Discovery.IncludeAssembly(typeof(UserCreatedIntegrationHandler).Assembly);
                 // -------------------------------
                 // Define schema for Wolverine durability and Postgres persistence
                 // -------------------------------
@@ -138,8 +141,8 @@
                 // -------------------------------
                 // Envelope customizer and routing convention
                 // -------------------------------
-                opts.Services.AddSingleton<IEnvelopeCustomizer, GenericEventContextEnvelopeCustomizer>();
-                opts.Services.AddSingleton<IMessageRoutingConvention, EventContextRoutingConvention>();
+                ////opts.Services.AddSingleton<IEnvelopeCustomizer, GenericEventContextEnvelopeCustomizer>();
+                ////opts.Services.AddSingleton<IMessageRoutingConvention, EventContextRoutingConvention>();
 
                 // -------------------------------
                 // Enable durable local queues and auto transaction application
@@ -175,21 +178,30 @@
                         // Durable outbox
                         opts.Policies.UseDurableOutboxOnAllSendingEndpoints();
 
+                        var exchangeName = $"{mq.Exchange}-exchange";
                         // Register messages
-                        opts.PublishMessage<EventContext<GameBasicInfoUpdatedIntegrationEvent, GameAggregate>>()
-                            .ToRabbitExchange(mq.Exchange);
-                        opts.PublishMessage<EventContext<GamePriceUpdatedIntegrationEvent, GameAggregate>>()
-                            .ToRabbitExchange(mq.Exchange);
-                        opts.PublishMessage<EventContext<GameStatusUpdatedIntegrationEvent, GameAggregate>>()
-                            .ToRabbitExchange(mq.Exchange);
-                        opts.PublishMessage<EventContext<GameRatingUpdatedIntegrationEvent, GameAggregate>>()
-                            .ToRabbitExchange(mq.Exchange);
-                        opts.PublishMessage<EventContext<GameDetailsUpdatedIntegrationEvent, GameAggregate>>()
-                            .ToRabbitExchange(mq.Exchange);
-                        opts.PublishMessage<EventContext<GameActivatedIntegrationEvent, GameAggregate>>()
-                            .ToRabbitExchange(mq.Exchange);
-                        opts.PublishMessage<EventContext<GameDeactivatedIntegrationEvent, GameAggregate>>()
-                            .ToRabbitExchange(mq.Exchange);
+                        opts.PublishMessage<EventContext<GameBasicInfoUpdatedIntegrationEvent>>()
+                                .ToRabbitExchange(exchangeName);
+                        opts.PublishMessage<EventContext<GamePriceUpdatedIntegrationEvent>>()
+                                .ToRabbitExchange(exchangeName);
+                        opts.PublishMessage<EventContext<GameStatusUpdatedIntegrationEvent>>()
+                                .ToRabbitExchange(exchangeName);
+                        opts.PublishMessage<EventContext<GameRatingUpdatedIntegrationEvent>>()
+                                .ToRabbitExchange(exchangeName);
+                        opts.PublishMessage<EventContext<GameDetailsUpdatedIntegrationEvent>>()
+                                .ToRabbitExchange(exchangeName);
+                        opts.PublishMessage<EventContext<GameActivatedIntegrationEvent>>()
+                                .ToRabbitExchange(exchangeName);
+                        opts.PublishMessage<EventContext<GameDeactivatedIntegrationEvent>>()
+                                .ToRabbitExchange(exchangeName);
+
+                        // Declara fila para eventos de Users
+                        opts.ListenToRabbitQueue($"games.{mq.ListenUserExchange}-queue", configure =>
+                            {
+                                configure.IsDurable = mq.Durable;
+                                configure.BindExchange($"{mq.ListenUserExchange}-exchange");
+                            });
+
                         break;
 
                     case BrokerType.AzureServiceBus when broker.ServiceBusSettings is { } sb:
@@ -207,28 +219,29 @@
                         ////    .ToAzureServiceBusTopic(sb.TopicName)
                         ////    .BufferedInMemory();
 
+                        var topicName = $"{sb.TopicName}-topic";
                         // Register messages for Azure Service Bus Topic with buffered in-memory delivery
-                        opts.PublishMessage<EventContext<GameBasicInfoUpdatedIntegrationEvent, GameAggregate>>()
-                            .ToAzureServiceBusTopic(sb.TopicName)
-                            .BufferedInMemory();
-                        opts.PublishMessage<EventContext<GamePriceUpdatedIntegrationEvent, GameAggregate>>()
-                            .ToAzureServiceBusTopic(sb.TopicName)
-                            .BufferedInMemory();
-                        opts.PublishMessage<EventContext<GameStatusUpdatedIntegrationEvent, GameAggregate>>()
-                            .ToAzureServiceBusTopic(sb.TopicName)
-                            .BufferedInMemory();
-                        opts.PublishMessage<EventContext<GameRatingUpdatedIntegrationEvent, GameAggregate>>()
-                            .ToAzureServiceBusTopic(sb.TopicName)
-                            .BufferedInMemory();
-                        opts.PublishMessage<EventContext<GameDetailsUpdatedIntegrationEvent, GameAggregate>>()
-                            .ToAzureServiceBusTopic(sb.TopicName)
-                            .BufferedInMemory();
-                        opts.PublishMessage<EventContext<GameActivatedIntegrationEvent, GameAggregate>>()
-                            .ToAzureServiceBusTopic(sb.TopicName)
-                            .BufferedInMemory();
-                        opts.PublishMessage<EventContext<GameDeactivatedIntegrationEvent, GameAggregate>>()
-                            .ToAzureServiceBusTopic(sb.TopicName)
-                            .BufferedInMemory();
+                        opts.PublishMessage<EventContext<GameBasicInfoUpdatedIntegrationEvent>>()
+                                .ToAzureServiceBusTopic(topicName)
+                                .BufferedInMemory();
+                        opts.PublishMessage<EventContext<GamePriceUpdatedIntegrationEvent>>()
+                                .ToAzureServiceBusTopic(topicName)
+                                .BufferedInMemory();
+                        opts.PublishMessage<EventContext<GameStatusUpdatedIntegrationEvent>>()
+                                .ToAzureServiceBusTopic(topicName)
+                                .BufferedInMemory();
+                        opts.PublishMessage<EventContext<GameRatingUpdatedIntegrationEvent>>()
+                                .ToAzureServiceBusTopic(topicName)
+                                .BufferedInMemory();
+                        opts.PublishMessage<EventContext<GameDetailsUpdatedIntegrationEvent>>()
+                                .ToAzureServiceBusTopic(topicName)
+                                .BufferedInMemory();
+                        opts.PublishMessage<EventContext<GameActivatedIntegrationEvent>>()
+                                .ToAzureServiceBusTopic(topicName)
+                                .BufferedInMemory();
+                        opts.PublishMessage<EventContext<GameDeactivatedIntegrationEvent>>()
+                                .ToAzureServiceBusTopic(topicName)
+                                .BufferedInMemory();
                         break;
                 }
 
@@ -236,9 +249,9 @@
                 // Persist Wolverine messages in Postgres using the same schema
                 // -------------------------------
                 opts.PersistMessagesWithPostgresql(
-                    PostgresHelper.Build(builder.Configuration).ConnectionString,
-                    wolverineSchema
-                );
+                        PostgresHelper.Build(builder.Configuration).ConnectionString,
+                        wolverineSchema
+                    );
             });
 
             // -------------------------------
