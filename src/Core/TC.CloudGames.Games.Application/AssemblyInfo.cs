@@ -4,8 +4,6 @@ global using FluentValidation;
 global using Microsoft.Extensions.DependencyInjection;
 global using Microsoft.Extensions.Logging;
 global using System.Diagnostics.CodeAnalysis;
-global using System.Text.Json;
-global using System.Text.Json.Serialization;
 global using TC.CloudGames.Contracts.Events;
 global using TC.CloudGames.Contracts.Events.Games;
 global using TC.CloudGames.Games.Application.Abstractions.Mappers;

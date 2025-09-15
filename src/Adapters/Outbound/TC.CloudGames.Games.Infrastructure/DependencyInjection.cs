@@ -1,4 +1,6 @@
-﻿namespace TC.CloudGames.Games.Infrastructure
+﻿using TC.CloudGames.SharedKernel.Infrastructure.Snapshots.Users;
+
+namespace TC.CloudGames.Games.Infrastructure
 {
     [ExcludeFromCodeCoverage]
     public static class DependencyInjection
@@ -12,6 +14,7 @@
             services.AddSingleton<IConnectionStringProvider, ConnectionStringProvider>();
             services.AddSingleton<ITokenProvider, TokenProvider>();
             services.AddScoped<IUserContext, UserContext>();
+            services.AddScoped<IUserSnapshotStore, UserSnapshotStore>();
 
             return services;
         }

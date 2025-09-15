@@ -131,7 +131,7 @@ namespace TC.CloudGames.Games.Api.Extensions
         {
             builder.Host.UseWolverine(opts =>
             {
-                opts.Discovery.IncludeAssembly(typeof(UserCreatedIntegrationHandler).Assembly);
+                opts.Discovery.IncludeAssembly(typeof(UserSnapshotProjectionHandler).Assembly);
                 // -------------------------------
                 // Define schema for Wolverine durability and Postgres persistence
                 // -------------------------------
