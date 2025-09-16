@@ -20,7 +20,7 @@
         /// <summary>
         /// Maps the command to the aggregate.
         /// </summary>
-        protected override Task<Result<GameAggregate>> MapCommandToAggregateAsync(CreateGameCommand command)
+        protected override Task<Result<GameAggregate>> MapCommandToAggregateAsync(CreateGameCommand command, CancellationToken ct = default)
         {
             var aggregateResult = CreateGameMapper.ToAggregate(command);
             if (!aggregateResult.IsSuccess)
@@ -36,7 +36,7 @@
         /// Validates the aggregate.
         /// Example: cross-entity checks, uniqueness rules, or custom domain invariants.
         /// </summary>
-        protected override Task<Result> ValidateAggregateAsync(GameAggregate aggregate)
+        protected override Task<Result> ValidateAggregateAsync(GameAggregate aggregate, CancellationToken ct = default)
         {
             // For now, no extra validation beyond the aggregate factory
             // Validate game uniqueness here if needed (Future enhancement)
@@ -47,7 +47,7 @@
         /// Publishes integration events through Wolverine Outbox.
         /// Maps domain events -> integration events and wraps them in EventContext.
         /// </summary>
-        protected override async Task PublishIntegrationEventsAsync(GameAggregate aggregate)
+        protected override async Task PublishIntegrationEventsAsync(GameAggregate aggregate, CancellationToken ct = default)
         {
             var mappings = new Dictionary<Type, Func<BaseDomainEvent, GameCreatedIntegrationEvent>>
             {

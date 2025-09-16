@@ -7,11 +7,11 @@
         {
         }
 
-        public override async Task<IEnumerable<GameAggregate>> GetAllAsync(CancellationToken cancellationToken = default)
+        public override async Task<IEnumerable<GameAggregate>> GetAllAsync(CancellationToken ct = default)
         {
             var gameProjections = await Session.Query<GameProjection>()
                 .Where(g => g.IsActive)
-                .ToListAsync(cancellationToken)
+                .ToListAsync(ct)
                 .ConfigureAwait(false);
 
             return gameProjections.Select(g =>
@@ -45,7 +45,7 @@
                 ));
         }
 
-        public async Task<GameByIdResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        public async Task<GameByIdResponse?> GetById2Async(Guid id, CancellationToken cancellationToken = default)
         {
             var projection = await Session.Query<GameProjection>()
                 .Where(g => g.IsActive && g.Id == id)

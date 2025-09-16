@@ -1,4 +1,5 @@
 ﻿using TC.CloudGames.Games.Application.MessageBrokerHandlers;
+using TC.CloudGames.SharedKernel.Infrastructure.Snapshots.Users;
 
 namespace TC.CloudGames.Games.Api.Extensions
 {
@@ -273,10 +274,24 @@ namespace TC.CloudGames.Games.Api.Extensions
                 options.Connection(connProvider.ConnectionString);
                 options.Logger(new ConsoleMartenLogger());
 
+                options.UseSystemTextJsonForSerialization(configure: cfg =>
+                {
+                    // Adicione aqui seus conversores
+                    ////cfg.Converters.Add(new RoleJsonConverter());
+
+                    // Configurações extras, se necessário
+                    ////cfg.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                    cfg.WriteIndented = true;
+                });
+
                 options.Events.DatabaseSchemaName = "events";
                 options.DatabaseSchemaName = "documents";
 
                 options.Projections.Add<GameProjectionHandler>(ProjectionLifecycle.Inline);
+
+                ////options.Projections.Snapshot<GameAggregate>(SnapshotLifecycle.Inline);
+                // Snapshot automático do aggregate (para acelerar LoadAsync)
+                options.Schema.For<GameAggregate>();
 
                 options.Schema.For<GameProjection>()
                     .DatabaseSchemaName("documents")
@@ -309,6 +324,39 @@ namespace TC.CloudGames.Games.Api.Extensions
                         .WithEncoding("UTF-8")
                         .ConnectionLimit(-1);
                 });
+
+                // -------------------------------
+                // Configuração do UserSnapshot
+                // -------------------------------
+                options.Schema.For<UserSnapshot>()
+                    .DatabaseSchemaName("documents")
+                    // Duplicates simples (Marten já cria índices básicos)
+                    .Duplicate(x => x.IsActive, pgType: "boolean")
+                    .Duplicate(x => x.Role, pgType: "varchar(50)")
+                    .Duplicate(x => x.CreatedAt, pgType: "timestamptz")
+                    .Duplicate(x => x.UpdatedAt, pgType: "timestamptz");
+
+                // Computed indexes customizados (sem Duplicate para evitar conflito)
+                options.Schema.For<UserSnapshot>()
+                    .Index(x => x.Id, x =>
+                    {
+                        x.IsUnique = true;
+                        x.Method = IndexMethod.btree;
+                        x.Name = "idx_usersnapshot_id";
+                    })
+                    .Index(x => x.Email, x =>
+                    {
+                        x.Casing = ComputedIndex.Casings.Lower;
+                        x.IsUnique = true;
+                        x.Method = IndexMethod.btree;
+                        x.Name = "idx_usersnapshot_email_lower";
+                    })
+                    .Index(x => x.Username, x =>
+                    {
+                        x.Casing = ComputedIndex.Casings.Lower;
+                        x.Method = IndexMethod.btree;
+                        x.Name = "idx_usersnapshot_username_lower";
+                    });
 
                 return options;
             })

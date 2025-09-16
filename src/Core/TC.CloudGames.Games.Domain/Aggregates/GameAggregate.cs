@@ -508,8 +508,8 @@
             decimal? ratingAverage,
             string? officialLink,
             string? gameStatus,
-            DateTime createdAt,
-            DateTime? updatedAt,
+            DateTimeOffset createdAt,
+            DateTimeOffset? updatedAt,
             bool isActive)
         {
             var game = new GameAggregate(id)
@@ -556,42 +556,42 @@
             Rating? Rating,
             string? OfficialLink,
             string? GameStatus,
-            DateTime OccurredOn) : BaseDomainEvent(AggregateId, OccurredOn);
+            DateTimeOffset OccurredOn) : BaseDomainEvent(AggregateId, OccurredOn);
 
         public record GameBasicInfoUpdatedDomainEvent(
             Guid AggregateId,
             string Name,
             string? Description,
             string? OfficialLink,
-            DateTime OccurredOn) : BaseDomainEvent(AggregateId, OccurredOn);
+            DateTimeOffset OccurredOn) : BaseDomainEvent(AggregateId, OccurredOn);
 
         public record GamePriceUpdatedDomainEvent(
             Guid AggregateId,
             Price NewPrice,
-            DateTime OccurredOn) : BaseDomainEvent(AggregateId, OccurredOn);
+            DateTimeOffset OccurredOn) : BaseDomainEvent(AggregateId, OccurredOn);
 
         public record GameStatusUpdatedDomainEvent(
             Guid AggregateId,
             string NewStatus,
-            DateTime OccurredOn) : BaseDomainEvent(AggregateId, OccurredOn);
+            DateTimeOffset OccurredOn) : BaseDomainEvent(AggregateId, OccurredOn);
 
         public record GameRatingUpdatedDomainEvent(
             Guid AggregateId,
             Rating? NewRating,
-            DateTime OccurredOn) : BaseDomainEvent(AggregateId, OccurredOn);
+            DateTimeOffset OccurredOn) : BaseDomainEvent(AggregateId, OccurredOn);
 
         public record GameDetailsUpdatedDomainEvent(
             Guid AggregateId,
             GameDetails NewGameDetails,
-            DateTime OccurredOn) : BaseDomainEvent(AggregateId, OccurredOn);
+            DateTimeOffset OccurredOn) : BaseDomainEvent(AggregateId, OccurredOn);
 
         public record GameActivatedDomainEvent(
             Guid AggregateId,
-            DateTime OccurredOn) : BaseDomainEvent(AggregateId, OccurredOn);
+            DateTimeOffset OccurredOn) : BaseDomainEvent(AggregateId, OccurredOn);
 
         public record GameDeactivatedDomainEvent(
             Guid AggregateId,
-            DateTime OccurredOn) : BaseDomainEvent(AggregateId, OccurredOn);
+            DateTimeOffset OccurredOn) : BaseDomainEvent(AggregateId, OccurredOn);
 
         #endregion
     }

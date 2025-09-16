@@ -142,12 +142,12 @@
         /// <summary>
         /// Timestamp when the game was created.
         /// </summary>
-        public DateTime CreatedAt { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
 
         /// <summary>
         /// Optional timestamp when the game was last updated.
         /// </summary>
-        public DateTime? UpdatedAt { get; set; }
+        public DateTimeOffset? UpdatedAt { get; set; }
 
         /// <summary>
         /// Indicates whether the game is currently active.
