@@ -7,11 +7,11 @@
         {
         }
 
-        public override async Task<IEnumerable<GameAggregate>> GetAllAsync(CancellationToken ct = default)
+        public override async Task<IEnumerable<GameAggregate>> GetAllAsync(CancellationToken cancellationToken = default)
         {
             var gameProjections = await Session.Query<GameProjection>()
                 .Where(g => g.IsActive)
-                .ToListAsync(ct)
+                .ToListAsync(cancellationToken)
                 .ConfigureAwait(false);
 
             return gameProjections.Select(g =>
