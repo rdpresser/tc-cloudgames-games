@@ -11,7 +11,7 @@
 
         public override async Task<Result<GameByIdResponse>> ExecuteAsync(GetGameByIdQuery command, CancellationToken ct = default)
         {
-            var result = await _repository.GetByIdAsync(command.Id, ct).ConfigureAwait(false);
+            var result = await _repository.GetGameByIdAsync(command.Id, ct).ConfigureAwait(false);
             if (result is not null)
                 return result;
 

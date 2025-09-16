@@ -45,7 +45,7 @@
                 ));
         }
 
-        public async Task<GameByIdResponse?> GetById2Async(Guid id, CancellationToken cancellationToken = default)
+        public async Task<GameByIdResponse?> GetGameByIdAsync(Guid id, CancellationToken cancellationToken = default)
         {
             var projection = await Session.Query<GameProjection>()
                 .Where(g => g.IsActive && g.Id == id)
