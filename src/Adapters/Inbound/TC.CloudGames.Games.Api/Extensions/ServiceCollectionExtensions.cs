@@ -1,4 +1,5 @@
-﻿using TC.CloudGames.Games.Application.MessageBrokerHandlers;
+﻿using Azure.Messaging.ServiceBus.Administration;
+using TC.CloudGames.Games.Application.MessageBrokerHandlers;
 using TC.CloudGames.SharedKernel.Infrastructure.Snapshots.Users;
 
 namespace TC.CloudGames.Games.Api.Extensions
@@ -215,34 +216,82 @@ namespace TC.CloudGames.Games.Api.Extensions
                         // Durable outbox for all sending endpoints
                         opts.Policies.UseDurableOutboxOnAllSendingEndpoints();
 
-                        // Publish all messages to a Topic with buffered in-memory delivery and durable outbox
-                        ////opts.PublishAllMessages()
-                        ////    .ToAzureServiceBusTopic(sb.TopicName)
-                        ////    .BufferedInMemory();
-
                         var topicName = $"{sb.TopicName}-topic";
                         // Register messages for Azure Service Bus Topic with buffered in-memory delivery
                         opts.PublishMessage<EventContext<GameBasicInfoUpdatedIntegrationEvent>>()
-                                .ToAzureServiceBusTopic(topicName)
-                                .BufferedInMemory();
+                            .ToAzureServiceBusTopic(topicName)
+                            .CustomizeOutgoing(envelope =>
+                            {
+                                envelope.Headers["DomainAggregate"] = "GameAggregate";
+                            })
+                            .UseDurableOutbox()
+                            .BufferedInMemory();
                         opts.PublishMessage<EventContext<GamePriceUpdatedIntegrationEvent>>()
-                                .ToAzureServiceBusTopic(topicName)
-                                .BufferedInMemory();
+                            .ToAzureServiceBusTopic(topicName)
+                            .CustomizeOutgoing(envelope =>
+                            {
+                                envelope.Headers["DomainAggregate"] = "GameAggregate";
+                            })
+                            .UseDurableOutbox()
+                            .BufferedInMemory();
                         opts.PublishMessage<EventContext<GameStatusUpdatedIntegrationEvent>>()
-                                .ToAzureServiceBusTopic(topicName)
-                                .BufferedInMemory();
+                            .ToAzureServiceBusTopic(topicName)
+                            .CustomizeOutgoing(envelope =>
+                            {
+                                envelope.Headers["DomainAggregate"] = "GameAggregate";
+                            })
+                            .UseDurableOutbox()
+                            .BufferedInMemory();
                         opts.PublishMessage<EventContext<GameRatingUpdatedIntegrationEvent>>()
-                                .ToAzureServiceBusTopic(topicName)
-                                .BufferedInMemory();
+                            .ToAzureServiceBusTopic(topicName)
+                            .CustomizeOutgoing(envelope =>
+                            {
+                                envelope.Headers["DomainAggregate"] = "GameAggregate";
+                            })
+                            .UseDurableOutbox()
+                            .BufferedInMemory();
                         opts.PublishMessage<EventContext<GameDetailsUpdatedIntegrationEvent>>()
-                                .ToAzureServiceBusTopic(topicName)
-                                .BufferedInMemory();
+                            .ToAzureServiceBusTopic(topicName)
+                            .CustomizeOutgoing(envelope =>
+                            {
+                                envelope.Headers["DomainAggregate"] = "GameAggregate";
+                            })
+                            .UseDurableOutbox()
+                            .BufferedInMemory();
                         opts.PublishMessage<EventContext<GameActivatedIntegrationEvent>>()
-                                .ToAzureServiceBusTopic(topicName)
-                                .BufferedInMemory();
+                            .ToAzureServiceBusTopic(topicName)
+                            .CustomizeOutgoing(envelope =>
+                            {
+                                envelope.Headers["DomainAggregate"] = "GameAggregate";
+                            })
+                            .UseDurableOutbox()
+                            .BufferedInMemory();
                         opts.PublishMessage<EventContext<GameDeactivatedIntegrationEvent>>()
-                                .ToAzureServiceBusTopic(topicName)
-                                .BufferedInMemory();
+                            .ToAzureServiceBusTopic(topicName)
+                            .CustomizeOutgoing(envelope =>
+                            {
+                                envelope.Headers["DomainAggregate"] = "GameAggregate";
+                            })
+                            .UseDurableOutbox()
+                            .BufferedInMemory();
+
+                        opts.ListenToAzureServiceBusSubscription(
+                            subscriptionName: $"games.{sb.UsersTopicName}-subscription",
+                            configureSubscriptions: configure =>
+                            {
+                                configure.TopicName = $"{sb.UsersTopicName}-topic";
+                                configure.MaxDeliveryCount = sb.MaxDeliveryCount;
+                                configure.DeadLetteringOnMessageExpiration = sb.EnableDeadLettering;
+                            },
+                            configureSubscriptionRule: configure =>
+                            {
+                                configure.Name = "UsersDomainAggregateFilter";
+                                configure.Filter = new SqlRuleFilter($"[DomainAggregate] = @domain")
+                                {
+                                    Parameters = { ["domain"] = "UserAggregate" }
+                                };
+                            });
+
                         break;
                 }
 

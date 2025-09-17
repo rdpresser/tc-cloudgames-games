@@ -23,7 +23,10 @@
             "In Development", "Released", "Discontinued", "Available", "Soon", "Early Access"
         );
 
-        // Private constructor for aggregate reconstruction
+        // Construtor para Marten / ORM - deve ser público para event sourcing
+        public GameAggregate() : base() { }
+
+        // Construtor privado para factories
         private GameAggregate(Guid id) : base(id) { }
 
         #region Factory Methods
@@ -416,7 +419,7 @@
             }
         }
 
-        internal void Apply(GameCreatedDomainEvent @event)
+        public void Apply(GameCreatedDomainEvent @event)
         {
             SetId(@event.AggregateId);
             Name = @event.Name;
@@ -436,7 +439,7 @@
             SetActivate();
         }
 
-        internal void Apply(GameBasicInfoUpdatedDomainEvent @event)
+        public void Apply(GameBasicInfoUpdatedDomainEvent @event)
         {
             Name = @event.Name;
             Description = @event.Description;
@@ -444,37 +447,37 @@
             SetUpdatedAt(@event.OccurredOn);
         }
 
-        internal void Apply(GamePriceUpdatedDomainEvent @event)
+        public void Apply(GamePriceUpdatedDomainEvent @event)
         {
             Price = @event.NewPrice;
             SetUpdatedAt(@event.OccurredOn);
         }
 
-        internal void Apply(GameStatusUpdatedDomainEvent @event)
+        public void Apply(GameStatusUpdatedDomainEvent @event)
         {
             GameStatus = @event.NewStatus;
             SetUpdatedAt(@event.OccurredOn);
         }
 
-        internal void Apply(GameRatingUpdatedDomainEvent @event)
+        public void Apply(GameRatingUpdatedDomainEvent @event)
         {
             Rating = @event.NewRating;
             SetUpdatedAt(@event.OccurredOn);
         }
 
-        internal void Apply(GameDetailsUpdatedDomainEvent @event)
+        public void Apply(GameDetailsUpdatedDomainEvent @event)
         {
             GameDetails = @event.NewGameDetails;
             SetUpdatedAt(@event.OccurredOn);
         }
 
-        internal void Apply(GameActivatedDomainEvent @event)
+        public void Apply(GameActivatedDomainEvent @event)
         {
             SetActivate();
             SetUpdatedAt(@event.OccurredOn);
         }
 
-        internal void Apply(GameDeactivatedDomainEvent @event)
+        public void Apply(GameDeactivatedDomainEvent @event)
         {
             SetDeactivate();
             SetUpdatedAt(@event.OccurredOn);
