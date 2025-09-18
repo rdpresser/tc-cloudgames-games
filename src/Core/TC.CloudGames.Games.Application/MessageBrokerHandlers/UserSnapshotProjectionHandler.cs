@@ -20,7 +20,7 @@ namespace TC.CloudGames.Games.Application.MessageBrokerHandlers
             _store = store ?? throw new ArgumentNullException(nameof(store));
         }
 
-        // -------------------------
+        // ------------------------- 
         // User Created
         // -------------------------
         public async Task Handle(EventContext<UserCreatedIntegrationEvent> @event, CancellationToken cancellationToken)

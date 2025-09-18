@@ -22,6 +22,7 @@ namespace TC.CloudGames.Games.Api.Extensions
 
                 // Enrich com trace_id e span_id
                 loggerConfiguration.Enrich.WithSpan();
+                loggerConfiguration.Enrich.FromLogContext();
 
                 // Use OpenTelemetry semantic conventions (dot notation) for Serilog properties
                 loggerConfiguration.Enrich.WithProperty("service.name", TelemetryConstants.ServiceName);
