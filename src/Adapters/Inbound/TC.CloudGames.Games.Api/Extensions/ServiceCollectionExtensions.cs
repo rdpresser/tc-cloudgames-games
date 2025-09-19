@@ -1,4 +1,5 @@
 ﻿using Azure.Messaging.ServiceBus.Administration;
+using TC.CloudGames.Contracts.Events.Users;
 using TC.CloudGames.Games.Application.MessageBrokerHandlers;
 using TC.CloudGames.SharedKernel.Infrastructure.Snapshots.Users;
 
@@ -128,23 +129,32 @@ namespace TC.CloudGames.Games.Api.Extensions
             return services;
         }
 
+        static string DefaultFlattenedMessageName(Type messageType)
+        {
+            if (!messageType.IsGenericType) return messageType.Name;
+
+            var generic = messageType.GetGenericTypeDefinition().Name;
+            var backtick = generic.IndexOf('`');
+            if (backtick >= 0) generic = generic.Substring(0, backtick);
+
+            var inner = messageType.GetGenericArguments()[0].Name;
+            return $"{generic}{inner}"; // ex: EventContext + UserCreatedIntegrationEvent => EventContextUserCreatedIntegrationEvent
+        }
+
         // 2) Configure Wolverine messaging with RabbitMQ transport and durable outbox
         private static WebApplicationBuilder AddWolverineMessaging(this WebApplicationBuilder builder)
         {
             builder.Host.UseWolverine(opts =>
             {
+                opts.UseSystemTextJsonForSerialization();
                 opts.Discovery.IncludeAssembly(typeof(UserSnapshotProjectionHandler).Assembly);
+                ////Console.WriteLine(opts.DescribeHandlerMatch(typeof(UserSnapshotProjectionHandler)));
+
                 // -------------------------------
                 // Define schema for Wolverine durability and Postgres persistence
                 // -------------------------------
                 const string wolverineSchema = "wolverine";
                 opts.Durability.MessageStorageSchemaName = wolverineSchema;
-
-                // -------------------------------
-                // Envelope customizer and routing convention
-                // -------------------------------
-                ////opts.Services.AddSingleton<IEnvelopeCustomizer, GenericEventContextEnvelopeCustomizer>();
-                ////opts.Services.AddSingleton<IMessageRoutingConvention, EventContextRoutingConvention>();
 
                 // -------------------------------
                 // Enable durable local queues and auto transaction application
@@ -174,9 +184,6 @@ namespace TC.CloudGames.Games.Api.Extensions
                         if (mq.UseQuorumQueues) rabbitOpts.UseQuorumQueues();
                         if (mq.AutoPurgeOnStartup) rabbitOpts.AutoPurgeOnStartup();
 
-                        // Publish all messages to the configured exchange with durable outbox
-                        ////opts.PublishAllMessages().ToRabbitExchange(mq.Exchange);
-
                         // Durable outbox
                         opts.Policies.UseDurableOutboxOnAllSendingEndpoints();
 
@@ -201,7 +208,7 @@ namespace TC.CloudGames.Games.Api.Extensions
                         opts.ListenToRabbitQueue($"games.{mq.ListenUserExchange}-queue", configure =>
                             {
                                 configure.IsDurable = mq.Durable;
-                                configure.BindExchange($"{mq.ListenUserExchange}-exchange");
+                                configure.BindExchange(exchangeName: $"{mq.ListenUserExchange}-exchange");
                             });
 
                         break;
@@ -217,61 +224,63 @@ namespace TC.CloudGames.Games.Api.Extensions
                         opts.Policies.UseDurableOutboxOnAllSendingEndpoints();
 
                         var topicName = $"{sb.TopicName}-topic";
+
+                        // Mapeia os aliases de cada evento
+                        opts.RegisterMessageType(
+                            typeof(EventContext<UserCreatedIntegrationEvent>),
+                            DefaultFlattenedMessageName(typeof(EventContext<UserCreatedIntegrationEvent>))
+                        );
+                        opts.RegisterMessageType(
+                            typeof(EventContext<UserUpdatedIntegrationEvent>),
+                            DefaultFlattenedMessageName(typeof(EventContext<UserUpdatedIntegrationEvent>))
+                        );
+                        opts.RegisterMessageType(
+                            typeof(EventContext<UserRoleChangedIntegrationEvent>),
+                            DefaultFlattenedMessageName(typeof(EventContext<UserRoleChangedIntegrationEvent>))
+                        );
+                        opts.RegisterMessageType(
+                            typeof(EventContext<UserActivatedIntegrationEvent>),
+                            DefaultFlattenedMessageName(typeof(EventContext<UserActivatedIntegrationEvent>))
+                        );
+                        opts.RegisterMessageType(
+                            typeof(EventContext<UserDeactivatedIntegrationEvent>),
+                            DefaultFlattenedMessageName(typeof(EventContext<UserDeactivatedIntegrationEvent>))
+                        );
+
                         // Register messages for Azure Service Bus Topic with buffered in-memory delivery
                         opts.PublishMessage<EventContext<GameBasicInfoUpdatedIntegrationEvent>>()
                             .ToAzureServiceBusTopic(topicName)
-                            .CustomizeOutgoing(envelope =>
-                            {
-                                envelope.Headers["DomainAggregate"] = "GameAggregate";
-                            })
+                            .CustomizeOutgoing(e => e.Headers["DomainAggregate"] = "GameAggregate")
                             .UseDurableOutbox()
                             .BufferedInMemory();
                         opts.PublishMessage<EventContext<GamePriceUpdatedIntegrationEvent>>()
                             .ToAzureServiceBusTopic(topicName)
-                            .CustomizeOutgoing(envelope =>
-                            {
-                                envelope.Headers["DomainAggregate"] = "GameAggregate";
-                            })
+                            .CustomizeOutgoing(e => e.Headers["DomainAggregate"] = "GameAggregate")
                             .UseDurableOutbox()
                             .BufferedInMemory();
                         opts.PublishMessage<EventContext<GameStatusUpdatedIntegrationEvent>>()
                             .ToAzureServiceBusTopic(topicName)
-                            .CustomizeOutgoing(envelope =>
-                            {
-                                envelope.Headers["DomainAggregate"] = "GameAggregate";
-                            })
+                            .CustomizeOutgoing(e => e.Headers["DomainAggregate"] = "GameAggregate")
                             .UseDurableOutbox()
                             .BufferedInMemory();
                         opts.PublishMessage<EventContext<GameRatingUpdatedIntegrationEvent>>()
                             .ToAzureServiceBusTopic(topicName)
-                            .CustomizeOutgoing(envelope =>
-                            {
-                                envelope.Headers["DomainAggregate"] = "GameAggregate";
-                            })
+                            .CustomizeOutgoing(e => e.Headers["DomainAggregate"] = "GameAggregate")
                             .UseDurableOutbox()
                             .BufferedInMemory();
                         opts.PublishMessage<EventContext<GameDetailsUpdatedIntegrationEvent>>()
                             .ToAzureServiceBusTopic(topicName)
-                            .CustomizeOutgoing(envelope =>
-                            {
-                                envelope.Headers["DomainAggregate"] = "GameAggregate";
-                            })
+                            .CustomizeOutgoing(e => e.Headers["DomainAggregate"] = "GameAggregate")
                             .UseDurableOutbox()
                             .BufferedInMemory();
                         opts.PublishMessage<EventContext<GameActivatedIntegrationEvent>>()
                             .ToAzureServiceBusTopic(topicName)
-                            .CustomizeOutgoing(envelope =>
-                            {
-                                envelope.Headers["DomainAggregate"] = "GameAggregate";
-                            })
+                            .CustomizeOutgoing(e => e.Headers["DomainAggregate"] = "GameAggregate")
                             .UseDurableOutbox()
                             .BufferedInMemory();
                         opts.PublishMessage<EventContext<GameDeactivatedIntegrationEvent>>()
                             .ToAzureServiceBusTopic(topicName)
-                            .CustomizeOutgoing(envelope =>
-                            {
-                                envelope.Headers["DomainAggregate"] = "GameAggregate";
-                            })
+                            .CustomizeOutgoing(e => e.Headers["DomainAggregate"] = "GameAggregate")
                             .UseDurableOutbox()
                             .BufferedInMemory();
 
@@ -285,12 +294,16 @@ namespace TC.CloudGames.Games.Api.Extensions
                             },
                             configureSubscriptionRule: configure =>
                             {
-                                configure.Name = "UsersDomainAggregateFilter";
-                                configure.Filter = new SqlRuleFilter($"[DomainAggregate] = @domain")
-                                {
-                                    Parameters = { ["domain"] = "UserAggregate" }
-                                };
-                            });
+                                configure.Name = "$Default";
+                                configure.Filter = new TrueRuleFilter();
+                                ////configure.Filter = new SqlRuleFilter("DomainAggregate = 'UserAggregate'");
+
+                                ////configure.Filter = new SqlRuleFilter($"[DomainAggregate] = @domain")
+                                ////{
+                                ////    Parameters = { ["domain"] = "UserAggregate" }
+                                ////};
+                            })
+                        .FromTopic($"{sb.UsersTopicName}-topic");
 
                         break;
                 }
@@ -302,6 +315,13 @@ namespace TC.CloudGames.Games.Api.Extensions
                         PostgresHelper.Build(builder.Configuration).ConnectionString,
                         wolverineSchema
                     );
+            })
+            .ConfigureLogging(configureLogging: config =>
+            {
+                config
+                    .AddDebug()
+                    .AddConsole()
+                    .SetMinimumLevel(LogLevel.Debug);
             });
 
             // -------------------------------
@@ -323,15 +343,15 @@ namespace TC.CloudGames.Games.Api.Extensions
                 options.Connection(connProvider.ConnectionString);
                 options.Logger(new ConsoleMartenLogger());
 
-                options.UseSystemTextJsonForSerialization(configure: cfg =>
-                {
-                    // Adicione aqui seus conversores
-                    ////cfg.Converters.Add(new RoleJsonConverter());
+                ////options.UseSystemTextJsonForSerialization(configure: cfg =>
+                ////{
+                ////    // Adicione aqui seus conversores
+                ////    ////cfg.Converters.Add(new RoleJsonConverter());
 
-                    // Configurações extras, se necessário
-                    ////cfg.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-                    cfg.WriteIndented = true;
-                });
+                ////    // Configurações extras, se necessário
+                ////    ////cfg.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                ////    ////cfg.WriteIndented = true;
+                ////});
 
                 options.Events.DatabaseSchemaName = "events";
                 options.DatabaseSchemaName = "documents";

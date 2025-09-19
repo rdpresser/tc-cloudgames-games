@@ -1,6 +1,6 @@
 ﻿using TC.CloudGames.Contracts.Events.Users;
 using TC.CloudGames.SharedKernel.Infrastructure.Snapshots.Users;
-using Wolverine.Attributes;
+using Wolverine;
 
 namespace TC.CloudGames.Games.Application.MessageBrokerHandlers
 {
@@ -10,8 +10,7 @@ namespace TC.CloudGames.Games.Application.MessageBrokerHandlers
     /// This class projects external events into a read-optimized snapshot
     /// for the Games microservice.
     /// </summary>
-    [WolverineHandler]
-    public class UserSnapshotProjectionHandler
+    public class UserSnapshotProjectionHandler : IWolverineHandler
     {
         private readonly IUserSnapshotStore _store;
 
@@ -23,7 +22,7 @@ namespace TC.CloudGames.Games.Application.MessageBrokerHandlers
         // ------------------------- 
         // User Created
         // -------------------------
-        public async Task Handle(EventContext<UserCreatedIntegrationEvent> @event, CancellationToken cancellationToken)
+        public async Task HandleAsync(EventContext<UserCreatedIntegrationEvent> @event, CancellationToken cancellationToken)
         {
             // Map integration event to snapshot
             var snapshot = new UserSnapshot
@@ -45,7 +44,7 @@ namespace TC.CloudGames.Games.Application.MessageBrokerHandlers
         // -------------------------
         // User Updated
         // -------------------------
-        public async Task Handle(EventContext<UserUpdatedIntegrationEvent> @event, CancellationToken cancellationToken)
+        public async Task HandleAsync(EventContext<UserUpdatedIntegrationEvent> @event, CancellationToken cancellationToken)
         {
             // Load existing snapshot
             var snapshot = await _store.LoadAsync(@event.EventData.Id);
@@ -64,7 +63,7 @@ namespace TC.CloudGames.Games.Application.MessageBrokerHandlers
         // -------------------------
         // User Role Changed
         // -------------------------
-        public async Task Handle(EventContext<UserRoleChangedIntegrationEvent> @event, CancellationToken cancellationToken)
+        public async Task HandleAsync(EventContext<UserRoleChangedIntegrationEvent> @event, CancellationToken cancellationToken)
         {
             var snapshot = await _store.LoadAsync(@event.EventData.Id);
             if (snapshot == null) return;
@@ -78,7 +77,7 @@ namespace TC.CloudGames.Games.Application.MessageBrokerHandlers
         // -------------------------
         // User Activated
         // -------------------------
-        public async Task Handle(EventContext<UserActivatedIntegrationEvent> @event, CancellationToken cancellationToken)
+        public async Task HandleAsync(EventContext<UserActivatedIntegrationEvent> @event, CancellationToken cancellationToken)
         {
             var snapshot = await _store.LoadAsync(@event.EventData.Id);
             if (snapshot == null) return;
@@ -92,7 +91,7 @@ namespace TC.CloudGames.Games.Application.MessageBrokerHandlers
         // -------------------------
         // User Deactivated
         // -------------------------
-        public async Task Handle(EventContext<UserDeactivatedIntegrationEvent> @event, CancellationToken cancellationToken)
+        public async Task HandleAsync(EventContext<UserDeactivatedIntegrationEvent> @event, CancellationToken cancellationToken)
         {
             var snapshot = await _store.LoadAsync(@event.EventData.Id);
             if (snapshot == null) return;
