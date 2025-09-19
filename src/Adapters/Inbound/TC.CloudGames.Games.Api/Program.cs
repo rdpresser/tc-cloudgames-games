@@ -1,3 +1,5 @@
+using TC.CloudGames.Games.Search;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure environment variables (will skip if running under .NET Aspire)
@@ -14,8 +16,16 @@ builder.Host.UseCustomSerilog(builder.Configuration);
 builder.Services.AddGameServices(builder);
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure();
+builder.Services.AddElasticSearch(builder.Configuration);
 
 var app = builder.Build();
+
+// ElasticSearch index initialization
+using (var scope = app.Services.CreateScope())
+{
+    var initializer = scope.ServiceProvider.GetRequiredService<GamesIndexInitializer>();
+    await initializer.InitializeAsync();
+}
 
 if (!builder.Environment.IsEnvironment("Testing"))
 {
