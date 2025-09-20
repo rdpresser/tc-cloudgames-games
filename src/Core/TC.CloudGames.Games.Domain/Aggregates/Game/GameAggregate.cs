@@ -1,4 +1,4 @@
-﻿namespace TC.CloudGames.Games.Domain.Aggregates
+﻿namespace TC.CloudGames.Games.Domain.Aggregates.Game
 {
     /// <summary>
     /// Game aggregate root that manages game entities and their business rules using Event Sourcing pattern.

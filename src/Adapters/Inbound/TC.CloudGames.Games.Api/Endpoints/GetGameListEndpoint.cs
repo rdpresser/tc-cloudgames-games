@@ -79,7 +79,7 @@
                 ),
                 Rating = Math.Round(faker.Random.Decimal(1, 10), 2),
                 OfficialLink = faker.Internet.Url(),
-                GameStatus = faker.PickRandom(Domain.Aggregates.GameAggregate.ValidGameStatus.ToArray())
+                GameStatus = faker.PickRandom(GameAggregate.ValidGameStatus.ToArray())
             };
         }
     }

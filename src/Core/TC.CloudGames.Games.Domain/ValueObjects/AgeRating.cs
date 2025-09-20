@@ -1,8 +1,4 @@
-﻿using Ardalis.Result;
-using System.Collections.Immutable;
-using TC.CloudGames.SharedKernel.Extensions;
-
-namespace TC.CloudGames.Games.Domain.ValueObjects
+﻿namespace TC.CloudGames.Games.Domain.ValueObjects
 {
     /// <summary>
     /// Value Object representing an age rating with validation and predefined ratings.

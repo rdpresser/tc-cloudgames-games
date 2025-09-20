@@ -1,6 +1,4 @@
-﻿using Ardalis.Result;
-
-namespace TC.CloudGames.Games.Domain.ValueObjects
+﻿namespace TC.CloudGames.Games.Domain.ValueObjects
 {
     /// <summary>
     /// Value Object representing a price with validation.
