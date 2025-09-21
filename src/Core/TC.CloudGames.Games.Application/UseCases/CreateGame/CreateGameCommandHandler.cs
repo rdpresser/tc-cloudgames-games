@@ -24,10 +24,7 @@
         {
             var aggregateResult = CreateGameMapper.ToAggregate(command);
             if (!aggregateResult.IsSuccess)
-            {
-                AddErrors(aggregateResult.ValidationErrors);
                 return Task.FromResult(Result<GameAggregate>.Invalid(aggregateResult.ValidationErrors));
-            }
 
             return Task.FromResult(Result<GameAggregate>.Success(aggregateResult.Value));
         }
@@ -82,16 +79,22 @@
             CancellationToken ct = default)
         {
             // 1. Map command -> aggregate
-            var mapResult = await MapCommandToAggregateAsync(command);
+            var mapResult = await MapCommandToAggregateAsync(command, ct);
             if (!mapResult.IsSuccess)
+            {
+                AddErrors(mapResult.ValidationErrors);
                 return Result<CreateGameResponse>.Invalid(mapResult.ValidationErrors);
+            }
 
             var aggregate = mapResult.Value;
 
             // 2. Validate aggregate (optional custom rules)
-            var validationResult = await ValidateAggregateAsync(aggregate);
+            var validationResult = await ValidateAggregateAsync(aggregate, ct);
             if (!validationResult.IsSuccess)
+            {
+                AddErrors(validationResult.ValidationErrors);
                 return Result<CreateGameResponse>.Invalid(validationResult.ValidationErrors);
+            }
 
             // 3. Persist aggregate events (event sourcing)
             await Repository.SaveAsync(aggregate, ct);
