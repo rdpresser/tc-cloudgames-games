@@ -295,6 +295,7 @@ namespace TC.CloudGames.Games.Api.Extensions
                 options.DatabaseSchemaName = "documents";
 
                 options.Projections.Add<GameProjectionHandler>(ProjectionLifecycle.Inline);
+                options.Projections.Add<UserGameLibraryProjectionHandler>(ProjectionLifecycle.Inline);
 
                 ////options.Projections.Snapshot<GameAggregate>(SnapshotLifecycle.Inline);
                 // Snapshot automático do aggregate (para acelerar LoadAsync)
@@ -321,6 +322,22 @@ namespace TC.CloudGames.Games.Api.Extensions
 
                 // GIN index on JSONB
                 options.Schema.For<GameProjection>().GinIndexJsonData();
+
+                options.Schema.For<UserGameLibraryProjection>()
+                    .DatabaseSchemaName("documents")
+                    .Duplicate(x => x.UserId, pgType: "uuid")
+                    .Duplicate(x => x.GameId, pgType: "uuid")
+                    .Duplicate(x => x.PaymentId, pgType: "uuid")
+                    .Duplicate(x => x.PurchaseDate, pgType: "timestamptz")
+                    .Duplicate(x => x.CreatedAt, pgType: "timestamptz")
+                    .Duplicate(x => x.UpdatedAt, pgType: "timestamptz")
+                    .Duplicate(x => x.IsActive, pgType: "boolean");
+
+                options.Schema.For<UserGameLibraryProjection>()
+                    .Index(x => x.GameName, x => { x.Casing = ComputedIndex.Casings.Lower; x.Method = IndexMethod.btree; x.Name = "idx_usergamelibrary_game_name_lower"; });
+
+                // GIN index on JSONB
+                options.Schema.For<UserGameLibraryProjection>().GinIndexJsonData();
 
                 options.CreateDatabasesForTenants(c =>
                 {

@@ -8,6 +8,7 @@ namespace TC.CloudGames.Games.Infrastructure
         public static IServiceCollection AddInfrastructure(this IServiceCollection services)
         {
             services.AddScoped<IGameRepository, GameRepository>();
+            services.AddScoped<IUserGameLibraryRepository, UserGameLibraryRepository>();
             services.AddSingleton<ICacheProvider, CacheProvider>();
             services.AddSingleton<ICacheService, CacheService>();
             services.AddTransient<IDateTimeProvider, DateTimeProvider>();
