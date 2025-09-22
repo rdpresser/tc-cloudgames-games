@@ -39,7 +39,7 @@
             // Call the external payment API - Wolverine MessageBroker RPC request/response
             ////var paymentResult = await _paymentService.ProcessPaymentAsync(command.UserId, command.GameId, game.Price, command.PaymentMethod.Method);
             var paymentResult = await _outbox.InvokeAsync<ChargePaymentResponse>(
-                new ChargePaymentRequest(command.UserId, command.GameId, game.Price, command.PaymentMethod.Method),
+                new ChargePaymentRequest(UserContext.Id, command.GameId, game.Price, command.PaymentMethod.Method),
                 timeout: TimeSpan.FromSeconds(10),
                 cancellation: ct);
 
@@ -49,7 +49,7 @@
             }
 
             // Map to aggregate
-            var aggregateResult = PurchaseGameMapper.ToAggregate(command, paymentResult.PaymentId!.Value, game.Name, game.Price);
+            var aggregateResult = PurchaseGameMapper.ToAggregate(command, UserContext.Id, paymentResult.PaymentId!.Value, game.Name, game.Price);
             if (!aggregateResult.IsSuccess)
             {
                 return Result<UserGameLibraryAggregate>.Invalid(aggregateResult.ValidationErrors);
@@ -61,7 +61,7 @@
         private async Task<Result> ValidateAggregateAsync(PurchaseGameCommand command, CancellationToken ct = default)
         {
             // Example: check if the user already owns this game
-            if (await Repository.UserOwnsGameAsync(command.UserId, command.GameId, ct))
+            if (await Repository.UserOwnsGameAsync(UserContext.Id, command.GameId, ct))
             {
                 return Result.Invalid(new ValidationError("UserGameLibrary.AlreadyExists", $"User already owns Game with this ID {command.GameId}."));
             }
@@ -134,7 +134,7 @@
             // 5. Commit changes
             await Repository.CommitAsync(aggregate, ct).ConfigureAwait(false);
 
-            _logger.LogInformation("Purchase completed successfully for User {UserId}, Game {GameId}", command.UserId, command.GameId);
+            _logger.LogInformation("Purchase completed successfully for User {UserId}, Game {GameId}", UserContext.Id, command.GameId);
 
             // 6. Map to response
             return PurchaseGameMapper.FromAggregate(aggregate);

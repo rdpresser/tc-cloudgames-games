@@ -4,10 +4,10 @@
     {
         public PurchaseGameCommandValidator()
         {
-            RuleFor(x => x.UserId)
-                .NotEmpty()
-                    .WithMessage("UserId is required.")
-                    .WithErrorCode($"{nameof(PurchaseGameCommand.UserId)}.Required");
+            ////RuleFor(x => x.UserId)
+            ////    .NotEmpty()
+            ////        .WithMessage("UserId is required.")
+            ////        .WithErrorCode($"{nameof(PurchaseGameCommand.UserId)}.Required");
 
             RuleFor(x => x.GameId)
                 .NotEmpty()

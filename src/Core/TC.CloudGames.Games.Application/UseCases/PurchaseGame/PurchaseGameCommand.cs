@@ -5,7 +5,6 @@
     /// Contains UserId, GameId and PaymentMethod.
     /// </summary>
     public sealed record PurchaseGameCommand(
-        Guid UserId,
         Guid GameId,
         PaymentMethod PaymentMethod)
         : IBaseCommand<PurchaseGameResponse>;

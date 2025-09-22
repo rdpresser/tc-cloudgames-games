@@ -2,12 +2,12 @@
 {
     public static class PurchaseGameMapper
     {
-        public static Result<UserGameLibraryAggregate> ToAggregate(PurchaseGameCommand command, Guid paymentId, string gameName, decimal amount)
+        public static Result<UserGameLibraryAggregate> ToAggregate(PurchaseGameCommand command, Guid userId, Guid paymentId, string gameName, decimal amount)
         {
             try
             {
                 var aggregate = UserGameLibraryAggregate.Create(
-                    userId: command.UserId,
+                    userId: userId,
                     gameId: command.GameId,
                     paymentId: paymentId,
                     gameName: gameName,
