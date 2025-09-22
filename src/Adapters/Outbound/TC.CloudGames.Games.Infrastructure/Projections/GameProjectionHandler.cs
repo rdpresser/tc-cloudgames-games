@@ -9,24 +9,24 @@
                 Id = @event.AggregateId,
                 Name = @event.Name,
                 ReleaseDate = @event.ReleaseDate,
-                AgeRating = @event.AgeRating.Value,
+                AgeRating = @event.AgeRating,
                 Description = @event.Description,
-                Developer = @event.DeveloperInfo.Developer,
-                Publisher = @event.DeveloperInfo.Publisher,
-                DiskSizeInGb = @event.DiskSize.SizeInGb,
-                PriceAmount = @event.Price.Amount,
-                Genre = @event.GameDetails.Genre,
-                Platforms = @event.GameDetails.Platforms.ToArray(),
-                Tags = @event.GameDetails.Tags,
-                GameMode = @event.GameDetails.GameMode,
-                DistributionFormat = @event.GameDetails.DistributionFormat,
-                AvailableLanguages = @event.GameDetails.AvailableLanguages,
-                SupportsDlcs = @event.GameDetails.SupportsDlcs,
-                MinimumSystemRequirements = @event.SystemRequirements.Minimum,
-                RecommendedSystemRequirements = @event.SystemRequirements.Recommended,
-                PlaytimeHours = @event.Playtime?.Hours,
-                PlayerCount = @event.Playtime?.PlayerCount,
-                RatingAverage = @event.Rating?.Average,
+                Developer = @event.Developer,
+                Publisher = @event.Publisher,
+                DiskSizeInGb = @event.DiskSizeInGb,
+                PriceAmount = @event.PriceAmount,
+                Genre = @event.Genre,
+                Platforms = @event.Platforms.ToArray(),
+                Tags = @event.Tags,
+                GameMode = @event.GameMode,
+                DistributionFormat = @event.DistributionFormat,
+                AvailableLanguages = @event.AvailableLanguages,
+                SupportsDlcs = @event.SupportsDlcs,
+                MinimumSystemRequirements = @event.MinimumSystemRequirements,
+                RecommendedSystemRequirements = @event.RecommendedSystemRequirements,
+                PlaytimeHours = @event.PlaytimeHours,
+                PlayerCount = @event.PlayerCount,
+                RatingAverage = @event.RatingAverage,
                 OfficialLink = @event.OfficialLink,
                 GameStatus = @event.GameStatus,
                 CreatedAt = @event.OccurredOn,
@@ -55,7 +55,7 @@
             var projection = await operations.LoadAsync<GameProjection>(@event.AggregateId).ConfigureAwait(false);
             if (projection == null) return;
 
-            projection.PriceAmount = @event.NewPrice.Amount;
+            projection.PriceAmount = @event.PriceAmount;
             projection.UpdatedAt = @event.OccurredOn;
 
             operations.Store(projection);
@@ -66,7 +66,7 @@
             var projection = await operations.LoadAsync<GameProjection>(@event.AggregateId).ConfigureAwait(false);
             if (projection == null) return;
 
-            projection.GameStatus = @event.NewStatus;
+            projection.GameStatus = @event.GameStatus;
             projection.UpdatedAt = @event.OccurredOn;
 
             operations.Store(projection);
@@ -77,7 +77,7 @@
             var projection = await operations.LoadAsync<GameProjection>(@event.AggregateId).ConfigureAwait(false);
             if (projection == null) return;
 
-            projection.RatingAverage = @event.NewRating?.Average;
+            projection.RatingAverage = @event.RatingAverage;
             projection.UpdatedAt = @event.OccurredOn;
 
             operations.Store(projection);
@@ -88,13 +88,13 @@
             var projection = await operations.LoadAsync<GameProjection>(@event.AggregateId).ConfigureAwait(false);
             if (projection == null) return;
 
-            projection.Genre = @event.NewGameDetails.Genre;
-            projection.Platforms = @event.NewGameDetails.Platforms.ToArray();
-            projection.Tags = @event.NewGameDetails.Tags;
-            projection.GameMode = @event.NewGameDetails.GameMode;
-            projection.DistributionFormat = @event.NewGameDetails.DistributionFormat;
-            projection.AvailableLanguages = @event.NewGameDetails.AvailableLanguages;
-            projection.SupportsDlcs = @event.NewGameDetails.SupportsDlcs;
+            projection.Genre = @event.Genre;
+            projection.Platforms = @event.Platforms.ToArray();
+            projection.Tags = @event.Tags;
+            projection.GameMode = @event.GameMode;
+            projection.DistributionFormat = @event.DistributionFormat;
+            projection.AvailableLanguages = @event.AvailableLanguages;
+            projection.SupportsDlcs = @event.SupportsDlcs;
             projection.UpdatedAt = @event.OccurredOn;
 
             operations.Store(projection);
