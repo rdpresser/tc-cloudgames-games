@@ -1,8 +1,4 @@
-﻿using TC.CloudGames.Contracts.Events.Users;
-using TC.CloudGames.SharedKernel.Infrastructure.Snapshots.Users;
-using Wolverine;
-
-namespace TC.CloudGames.Games.Application.MessageBrokerHandlers
+﻿namespace TC.CloudGames.Games.Application.MessageBrokerHandlers
 {
     /// <summary>
     /// Handles user integration events from the Users microservice and updates

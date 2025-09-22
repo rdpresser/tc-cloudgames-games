@@ -1,6 +1,4 @@
-﻿using TC.CloudGames.Games.Domain.Aggregates.UserGameLibrary;
-
-namespace TC.CloudGames.Games.Infrastructure.Repositories
+﻿namespace TC.CloudGames.Games.Infrastructure.Repositories
 {
     public class UserGameLibraryRepository : BaseRepository<UserGameLibraryAggregate>, IUserGameLibraryRepository
     {

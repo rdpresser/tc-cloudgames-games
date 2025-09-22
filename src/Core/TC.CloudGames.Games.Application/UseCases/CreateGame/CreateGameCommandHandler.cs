@@ -48,7 +48,7 @@
         {
             var mappings = new Dictionary<Type, Func<BaseDomainEvent, GameCreatedIntegrationEvent>>
             {
-                { typeof(GameCreatedDomainEvent), e => CreateGameMapper.ToIntegrationEvent((GameCreatedDomainEvent)e) }
+                { typeof(GameAggregate.GameCreatedDomainEvent), e => CreateGameMapper.ToIntegrationEvent((GameAggregate.GameCreatedDomainEvent)e) }
             };
 
             var integrationEvents = aggregate.UncommittedEvents

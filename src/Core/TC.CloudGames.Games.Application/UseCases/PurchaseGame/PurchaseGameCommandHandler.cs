@@ -1,8 +1,4 @@
-﻿using TC.CloudGames.Contracts.Events.Payments;
-using TC.CloudGames.Games.Domain.Aggregates.UserGameLibrary;
-using static TC.CloudGames.Games.Domain.Aggregates.UserGameLibrary.UserGameLibraryAggregate;
-
-namespace TC.CloudGames.Games.Application.UseCases.PurchaseGame
+﻿namespace TC.CloudGames.Games.Application.UseCases.PurchaseGame
 {
     internal sealed class PurchaseGameCommandHandler
         : BaseCommandHandler<PurchaseGameCommand, PurchaseGameResponse, UserGameLibraryAggregate, IUserGameLibraryRepository>
@@ -53,7 +49,7 @@ namespace TC.CloudGames.Games.Application.UseCases.PurchaseGame
             }
 
             // Map to aggregate
-            var aggregateResult = PurchaseGameMapper.ToAggregate(command, paymentResult.PaymentId!.Value, game.Name);
+            var aggregateResult = PurchaseGameMapper.ToAggregate(command, paymentResult.PaymentId!.Value, game.Name, game.Price);
             if (!aggregateResult.IsSuccess)
             {
                 return Result<UserGameLibraryAggregate>.Invalid(aggregateResult.ValidationErrors);
@@ -80,7 +76,7 @@ namespace TC.CloudGames.Games.Application.UseCases.PurchaseGame
         {
             var mappings = new Dictionary<Type, Func<BaseDomainEvent, GamePurchasedIntegrationEvent>>
             {
-                { typeof(UserGameLibraryCreatedDomainEvent), e => PurchaseGameMapper.ToIntegrationEvent((UserGameLibraryCreatedDomainEvent)e) }
+                { typeof(UserGameLibraryAggregate.UserGameLibraryCreatedDomainEvent), e => PurchaseGameMapper.ToIntegrationEvent((UserGameLibraryAggregate.UserGameLibraryCreatedDomainEvent)e) }
             };
 
             var integrationEvents = aggregate.UncommittedEvents

@@ -1,6 +1,4 @@
-﻿using TC.CloudGames.Games.Application.UseCases.GetGameList;
-
-namespace TC.CloudGames.Games.Application.Abstractions.Ports
+﻿namespace TC.CloudGames.Games.Application.Abstractions.Ports
 {
     public interface IGameRepository : IBaseRepository<GameAggregate>
     {

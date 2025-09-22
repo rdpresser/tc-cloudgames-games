@@ -4,7 +4,7 @@
     {
         public static Result<GameAggregate> ToAggregate(CreateGameCommand command)
         {
-            return CreateFromPrimitives(
+            return GameAggregate.CreateFromPrimitives(
                 command.Name,
                 command.ReleaseDate,
                 command.AgeRating,
@@ -60,7 +60,7 @@
             );
         }
 
-        public static GameCreatedIntegrationEvent ToIntegrationEvent(GameCreatedDomainEvent domainEvent)
+        public static GameCreatedIntegrationEvent ToIntegrationEvent(GameAggregate.GameCreatedDomainEvent domainEvent)
         {
             return new GameCreatedIntegrationEvent(
                 domainEvent.AggregateId,

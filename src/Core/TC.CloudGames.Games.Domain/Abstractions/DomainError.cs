@@ -1,6 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-
-namespace TC.CloudGames.Games.Domain.Abstractions
+﻿namespace TC.CloudGames.Games.Domain.Abstractions
 {
     [ExcludeFromCodeCoverage]
     public record DomainError(string Property, string ErrorMessage, string ErrorCode = default!)

@@ -9,8 +9,8 @@
         public Guid UserId { get; private set; }
         public Guid GameId { get; private set; }
         public Guid PaymentId { get; private set; }
-
         public string GameName { get; private set; } = string.Empty;
+        public decimal Amount { get; private set; }
         public DateTimeOffset PurchaseDate { get; private set; } = DateTimeOffset.UtcNow;
 
         // Parameterless constructor for ORM / Event Sourcing
@@ -24,7 +24,7 @@
         /// <summary>
         /// Creates a new UserGameLibraryAggregate with validated primitive values.
         /// </summary>
-        public static Result<UserGameLibraryAggregate> Create(Guid userId, Guid gameId, Guid paymentId, string gameName, DateTimeOffset? purchaseDate = null)
+        public static Result<UserGameLibraryAggregate> Create(Guid userId, Guid gameId, Guid paymentId, string gameName, decimal amount, DateTimeOffset? purchaseDate = null)
         {
             var errors = new List<ValidationError>();
 
@@ -47,6 +47,7 @@
                 gameId,
                 paymentId,
                 gameName,
+                amount,
                 purchaseDate ?? DateTimeOffset.UtcNow);
 
             aggregate.ApplyEvent(@event);
@@ -76,6 +77,7 @@
             PaymentId = @event.PaymentId;
             PurchaseDate = @event.PurchaseDate;
             GameName = @event.GameName;
+            Amount = @event.Amount;
             SetCreatedAt(@event.OccurredOn);
         }
 
@@ -92,6 +94,7 @@
             Guid GameId,
             Guid PaymentId,
             string GameName,
+            decimal Amount,
             DateTimeOffset PurchaseDate,
             DateTimeOffset OccurredOn = default) : BaseDomainEvent(AggregateId, OccurredOn == default ? DateTimeOffset.UtcNow : OccurredOn);
 

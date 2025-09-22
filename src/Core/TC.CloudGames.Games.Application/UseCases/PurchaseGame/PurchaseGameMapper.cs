@@ -1,11 +1,8 @@
-﻿using TC.CloudGames.Games.Domain.Aggregates.UserGameLibrary;
-using static TC.CloudGames.Games.Domain.Aggregates.UserGameLibrary.UserGameLibraryAggregate;
-
-namespace TC.CloudGames.Games.Application.UseCases.PurchaseGame
+﻿namespace TC.CloudGames.Games.Application.UseCases.PurchaseGame
 {
     public static class PurchaseGameMapper
     {
-        public static Result<UserGameLibraryAggregate> ToAggregate(PurchaseGameCommand command, Guid paymentId, string gameName)
+        public static Result<UserGameLibraryAggregate> ToAggregate(PurchaseGameCommand command, Guid paymentId, string gameName, decimal amount)
         {
             try
             {
@@ -13,7 +10,8 @@ namespace TC.CloudGames.Games.Application.UseCases.PurchaseGame
                     userId: command.UserId,
                     gameId: command.GameId,
                     paymentId: paymentId,
-                    gameName: gameName
+                    gameName: gameName,
+                    amount: amount
                 );
 
                 return Result<UserGameLibraryAggregate>.Success(aggregate);
@@ -32,16 +30,18 @@ namespace TC.CloudGames.Games.Application.UseCases.PurchaseGame
                 aggregate.UserId,
                 aggregate.GameId,
                 aggregate.PaymentId,
+                aggregate.Amount,
                 aggregate.PurchaseDate.UtcDateTime
             );
 
 
-        public static GamePurchasedIntegrationEvent ToIntegrationEvent(UserGameLibraryCreatedDomainEvent domainEvent)
+        public static GamePurchasedIntegrationEvent ToIntegrationEvent(UserGameLibraryAggregate.UserGameLibraryCreatedDomainEvent domainEvent)
         => new(
                 domainEvent.UserId,
                 domainEvent.GameId,
                 domainEvent.PaymentId,
                 domainEvent.GameName,
+                domainEvent.Amount,
                 DateTime.UtcNow,
                 domainEvent.OccurredOn
             );

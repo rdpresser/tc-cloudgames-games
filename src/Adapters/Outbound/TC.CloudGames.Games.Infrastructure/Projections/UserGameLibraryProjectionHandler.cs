@@ -1,6 +1,4 @@
-﻿using static TC.CloudGames.Games.Domain.Aggregates.UserGameLibrary.UserGameLibraryAggregate;
-
-namespace TC.CloudGames.Games.Infrastructure.Projections
+﻿namespace TC.CloudGames.Games.Infrastructure.Projections
 {
     public class UserGameLibraryProjectionHandler : EventProjection
     {
@@ -12,6 +10,7 @@ namespace TC.CloudGames.Games.Infrastructure.Projections
                 GameId = @event.GameId,
                 PaymentId = @event.PaymentId,
                 GameName = @event.GameName,
+                Amount = @event.Amount,
                 PurchaseDate = @event.PurchaseDate,
                 CreatedAt = @event.OccurredOn,
                 UpdatedAt = null,

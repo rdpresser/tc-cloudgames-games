@@ -1,6 +1,4 @@
-﻿using TC.CloudGames.Games.Application.UseCases.GetGameById;
-
-namespace TC.CloudGames.Games.Api.Endpoints
+﻿namespace TC.CloudGames.Games.Api.Endpoints
 {
     public sealed class GetGameByIdEndpoint : BaseApiEndpoint<GetGameByIdQuery, GameByIdResponse>
     {

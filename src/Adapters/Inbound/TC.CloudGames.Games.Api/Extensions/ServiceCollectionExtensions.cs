@@ -1,9 +1,4 @@
-﻿using Azure.Messaging.ServiceBus.Administration;
-using TC.CloudGames.Games.Application.MessageBrokerHandlers;
-using TC.CloudGames.Messaging.Extensions;
-using TC.CloudGames.SharedKernel.Infrastructure.Snapshots.Users;
-
-namespace TC.CloudGames.Games.Api.Extensions
+﻿namespace TC.CloudGames.Games.Api.Extensions
 {
     internal static class ServiceCollectionExtensions
     {

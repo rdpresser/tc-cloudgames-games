@@ -7,5 +7,6 @@
         Guid UserId,
         Guid GameId,
         Guid PaymentId,
+        decimal Amount,
         DateTime PurchaseDate);
 }
