@@ -131,7 +131,6 @@
             {
                 opts.UseSystemTextJsonForSerialization();
                 opts.Discovery.IncludeAssembly(typeof(UserSnapshotProjectionHandler).Assembly);
-                ////Console.WriteLine(opts.DescribeHandlerMatch(typeof(UserSnapshotProjectionHandler)));
 
                 // -------------------------------
                 // Define schema for Wolverine durability and Postgres persistence
@@ -208,6 +207,9 @@
 
                         var topicName = $"{sb.TopicName}-topic";
 
+                        // PAYMENTS API EVENTS -------------------------------
+                        opts.RegisterPaymentEvents();
+
                         // USERS API EVENTS -------------------------------
                         opts.RegisterUserEvents();
 
@@ -251,10 +253,7 @@
             })
             .ConfigureLogging(configureLogging: config =>
             {
-                config
-                    .AddDebug()
-                    .AddConsole()
-                    .SetMinimumLevel(LogLevel.Debug);
+                config.AddDebug().AddConsole().SetMinimumLevel(LogLevel.Debug);
             });
 
             // -------------------------------

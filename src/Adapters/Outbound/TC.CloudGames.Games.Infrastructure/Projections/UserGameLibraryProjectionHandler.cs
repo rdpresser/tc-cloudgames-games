@@ -1,4 +1,6 @@
-﻿namespace TC.CloudGames.Games.Infrastructure.Projections
+﻿using static TC.CloudGames.Games.Domain.Aggregates.UserGameLibrary.UserGameLibraryAggregate;
+
+namespace TC.CloudGames.Games.Infrastructure.Projections
 {
     public class UserGameLibraryProjectionHandler : EventProjection
     {

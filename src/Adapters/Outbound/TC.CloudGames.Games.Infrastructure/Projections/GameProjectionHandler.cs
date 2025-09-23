@@ -1,4 +1,6 @@
-﻿namespace TC.CloudGames.Games.Infrastructure.Projections
+﻿using static TC.CloudGames.Games.Domain.Aggregates.Game.GameAggregate;
+
+namespace TC.CloudGames.Games.Infrastructure.Projections
 {
     public class GameProjectionHandler : EventProjection
     {

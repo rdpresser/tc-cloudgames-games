@@ -18,7 +18,7 @@
         // ------------------------- 
         // User Created
         // -------------------------
-        public async Task HandleAsync(EventContext<UserCreatedIntegrationEvent> @event, CancellationToken cancellationToken)
+        public async Task HandleAsync(EventContext<UserCreatedIntegrationEvent> @event, CancellationToken cancellationToken = default)
         {
             // Map integration event to snapshot
             var snapshot = new UserSnapshot
@@ -34,13 +34,13 @@
             };
 
             // Save snapshot
-            await _store.SaveAsync(snapshot);
+            await _store.SaveAsync(snapshot, cancellationToken).ConfigureAwait(false);
         }
 
         // -------------------------
         // User Updated
         // -------------------------
-        public async Task HandleAsync(EventContext<UserUpdatedIntegrationEvent> @event, CancellationToken cancellationToken)
+        public async Task HandleAsync(EventContext<UserUpdatedIntegrationEvent> @event, CancellationToken cancellationToken = default)
         {
             // Load existing snapshot
             var snapshot = await _store.LoadAsync(@event.EventData.Id);
@@ -53,13 +53,13 @@
             snapshot.UpdatedAt = @event.EventData.OccurredOn;
 
             // Save updated snapshot
-            await _store.SaveAsync(snapshot);
+            await _store.SaveAsync(snapshot, cancellationToken).ConfigureAwait(false);
         }
 
         // -------------------------
         // User Role Changed
         // -------------------------
-        public async Task HandleAsync(EventContext<UserRoleChangedIntegrationEvent> @event, CancellationToken cancellationToken)
+        public async Task HandleAsync(EventContext<UserRoleChangedIntegrationEvent> @event, CancellationToken cancellationToken = default)
         {
             var snapshot = await _store.LoadAsync(@event.EventData.Id);
             if (snapshot == null) return;
@@ -67,13 +67,13 @@
             snapshot.Role = @event.EventData.NewRole;
             snapshot.UpdatedAt = @event.EventData.OccurredOn;
 
-            await _store.SaveAsync(snapshot);
+            await _store.SaveAsync(snapshot, cancellationToken).ConfigureAwait(false);
         }
 
         // -------------------------
         // User Activated
         // -------------------------
-        public async Task HandleAsync(EventContext<UserActivatedIntegrationEvent> @event, CancellationToken cancellationToken)
+        public async Task HandleAsync(EventContext<UserActivatedIntegrationEvent> @event, CancellationToken cancellationToken = default)
         {
             var snapshot = await _store.LoadAsync(@event.EventData.Id);
             if (snapshot == null) return;
@@ -81,13 +81,13 @@
             snapshot.IsActive = true;
             snapshot.UpdatedAt = @event.EventData.OccurredOn;
 
-            await _store.SaveAsync(snapshot);
+            await _store.SaveAsync(snapshot, cancellationToken).ConfigureAwait(false);
         }
 
         // -------------------------
         // User Deactivated
         // -------------------------
-        public async Task HandleAsync(EventContext<UserDeactivatedIntegrationEvent> @event, CancellationToken cancellationToken)
+        public async Task HandleAsync(EventContext<UserDeactivatedIntegrationEvent> @event, CancellationToken cancellationToken = default)
         {
             var snapshot = await _store.LoadAsync(@event.EventData.Id);
             if (snapshot == null) return;
@@ -95,7 +95,7 @@
             snapshot.IsActive = false;
             snapshot.UpdatedAt = @event.EventData.OccurredOn;
 
-            await _store.SaveAsync(snapshot);
+            await _store.SaveAsync(snapshot, cancellationToken).ConfigureAwait(false);
         }
     }
 }
