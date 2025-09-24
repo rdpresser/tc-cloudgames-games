@@ -73,7 +73,7 @@ public class ElasticGameSearchService : IGameSearchService
         await _client.Indices.PutAliasAsync(_options.IndexName, "games", ct);
     }
 
-    public async Task<AggregateDictionary> GetPopularGamesAggregationAsync(int size = 10, CancellationToken ct = default)
+    public async Task<IEnumerable<object>> GetPopularGamesAggregationAsync(int size = 10, CancellationToken ct = default)
     {
         var resp = await _client.SearchAsync<GameProjection>(s => s
             .Indices(_options.IndexName)
@@ -86,8 +86,20 @@ public class ElasticGameSearchService : IGameSearchService
                 })
             ), ct);
 
-        return resp.Aggregations ?? new AggregateDictionary(new Dictionary<string, IAggregate>());
-    }
+        if (resp.Aggregations == null)
+            return Enumerable.Empty<object>();
+
+        // Try to get the StringTermsAggregate for "top_games"
+        if (!resp.Aggregations.TryGetAggregate<StringTermsAggregate>("top_games", out var termsAgg) || termsAgg == null)
+            return Enumerable.Empty<object>();
+
+        // Map to a simple list
+        return termsAgg.Buckets.Select(b => new
+        {
+            Genre = b.Key,
+            Count = b.DocCount
+        });
+        }
 
     public async Task IndexAsync(GameProjection projection, CancellationToken ct = default)
     {

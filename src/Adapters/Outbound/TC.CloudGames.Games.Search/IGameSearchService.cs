@@ -13,7 +13,7 @@ public interface IGameSearchService
     Task BulkIndexAsync(IEnumerable<GameProjection> games, CancellationToken ct = default);
     Task<SimpleSearchResult<GameProjection>> SearchAsync(string query, int size = 20, CancellationToken ct = default);
 
-    Task<AggregateDictionary> GetPopularGamesAggregationAsync(int size = 10, CancellationToken ct = default);
+    Task<IEnumerable<object>> GetPopularGamesAggregationAsync(int size = 10, CancellationToken ct = default);
 }
 
 public record SimpleSearchResult<T>(IReadOnlyCollection<T> Hits, long Total);
