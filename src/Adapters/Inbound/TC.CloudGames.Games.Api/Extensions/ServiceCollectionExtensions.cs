@@ -1,4 +1,7 @@
-﻿namespace TC.CloudGames.Games.Api.Extensions
+﻿using TC.CloudGames.Contracts.Events.Payments;
+using Wolverine.RabbitMQ;
+
+namespace TC.CloudGames.Games.Api.Extensions
 {
     internal static class ServiceCollectionExtensions
     {
@@ -172,19 +175,23 @@
                         var exchangeName = $"{mq.Exchange}-exchange";
                         // Register messages
                         opts.PublishMessage<EventContext<GameBasicInfoUpdatedIntegrationEvent>>()
-                                .ToRabbitExchange(exchangeName);
+                            .ToRabbitExchange(exchangeName);
                         opts.PublishMessage<EventContext<GamePriceUpdatedIntegrationEvent>>()
-                                .ToRabbitExchange(exchangeName);
+                            .ToRabbitExchange(exchangeName);
                         opts.PublishMessage<EventContext<GameStatusUpdatedIntegrationEvent>>()
-                                .ToRabbitExchange(exchangeName);
+                            .ToRabbitExchange(exchangeName);
                         opts.PublishMessage<EventContext<GameRatingUpdatedIntegrationEvent>>()
-                                .ToRabbitExchange(exchangeName);
+                            .ToRabbitExchange(exchangeName);
                         opts.PublishMessage<EventContext<GameDetailsUpdatedIntegrationEvent>>()
-                                .ToRabbitExchange(exchangeName);
+                            .ToRabbitExchange(exchangeName);
                         opts.PublishMessage<EventContext<GameActivatedIntegrationEvent>>()
-                                .ToRabbitExchange(exchangeName);
+                            .ToRabbitExchange(exchangeName);
                         opts.PublishMessage<EventContext<GameDeactivatedIntegrationEvent>>()
-                                .ToRabbitExchange(exchangeName);
+                            .ToRabbitExchange(exchangeName);
+
+                        // Configura o endpoint de envio
+                        opts.PublishMessage<ChargePaymentRequest>()
+                            .ToRabbitQueue("charge-payment-queue");
 
                         // Declara fila para eventos de Users
                         opts.ListenToRabbitQueue($"games.{mq.ListenUserExchange}-queue", configure =>
@@ -206,6 +213,9 @@
                         opts.Policies.UseDurableOutboxOnAllSendingEndpoints();
 
                         var topicName = $"{sb.TopicName}-topic";
+
+                        opts.PublishMessage<ChargePaymentRequest>()
+                            .ToAzureServiceBusQueue("payments-rpc-queue");
 
                         // PAYMENTS API EVENTS -------------------------------
                         opts.RegisterPaymentEvents();

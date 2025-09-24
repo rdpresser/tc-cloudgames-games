@@ -4,7 +4,6 @@
         : BaseCommandHandler<PurchaseGameCommand, PurchaseGameResponse, UserGameLibraryAggregate, IUserGameLibraryRepository>
     {
         private readonly IGameRepository _gameRepository;
-        ////private readonly IPaymentService _paymentService;
         private readonly IMartenOutbox _outbox;
         private readonly IMessageBus _messageBus;
         private readonly ILogger<PurchaseGameCommandHandler> _logger;
@@ -13,14 +12,12 @@
             IUserGameLibraryRepository repository,
             IGameRepository gameRepository,
             IUserContext userContext,
-            ////IPaymentService paymentService,
             IMartenOutbox outbox,
             IMessageBus messageBus,
             ILogger<PurchaseGameCommandHandler> logger)
             : base(repository, userContext)
         {
             _gameRepository = gameRepository ?? throw new ArgumentNullException(nameof(gameRepository));
-            ////_paymentService = paymentService ?? throw new ArgumentNullException(nameof(paymentService));
             _outbox = outbox ?? throw new ArgumentNullException(nameof(outbox));
             _messageBus = messageBus ?? throw new ArgumentNullException(nameof(messageBus));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -43,7 +40,7 @@
             ////var paymentResult = await _paymentService.ProcessPaymentAsync(command.UserId, command.GameId, game.Price, command.PaymentMethod.Method);
             var paymentResult = await _messageBus.InvokeAsync<ChargePaymentResponse>(
                 new ChargePaymentRequest(UserContext.Id, command.GameId, game.Price, command.PaymentMethod.Method),
-                timeout: TimeSpan.FromSeconds(10),
+                timeout: TimeSpan.FromSeconds(30),
                 cancellation: ct);
 
             if (!paymentResult.Success)
