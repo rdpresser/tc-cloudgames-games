@@ -11,6 +11,9 @@ public interface IGameSearchService
     Task UpdateAsync(Guid id, object patch, CancellationToken ct = default);
     Task DeleteAsync(string id, CancellationToken ct = default);
     Task BulkIndexAsync(IEnumerable<GameProjection> games, CancellationToken ct = default);
-    Task<SearchResponse<GameProjection>> SearchAsync(string query, int size = 20, CancellationToken ct = default);
+    Task<SimpleSearchResult<GameProjection>> SearchAsync(string query, int size = 20, CancellationToken ct = default);
+
     Task<AggregateDictionary> GetPopularGamesAggregationAsync(int size = 10, CancellationToken ct = default);
 }
+
+public record SimpleSearchResult<T>(IReadOnlyCollection<T> Hits, long Total);

@@ -31,5 +31,7 @@ public static class ElasticClientFactory
 
         // registra serviços de domínio
         services.AddScoped<IGameSearchService, ElasticGameSearchService>();
+        services.AddScoped<GamesIndexInitializer>();
+
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Aggregations;
 using Elastic.Clients.Elasticsearch.Core.Bulk;
+using Elastic.Clients.Elasticsearch.Nodes;
 using TC.CloudGames.Games.Infrastructure.Projections;
 
 namespace TC.CloudGames.Games.Search;
@@ -18,21 +19,19 @@ public class ElasticGameSearchService : IGameSearchService
 
     public async Task BulkIndexAsync(IEnumerable<GameProjection> games, CancellationToken ct = default)
     {
-        var bulk = new BulkRequest
-        {
-            Index = _options.IndexName,
-            Operations = new List<IBulkOperation>()
-        };
-
+        var operations = new List<IBulkOperation>();
         foreach (var g in games)
         {
-            bulk.Operations.Add(new BulkIndexOperation<GameProjection>(g)
-            {
-                Id = g.Id
-            });
+            operations.Add(new BulkIndexOperation<GameProjection>(g) { Id = g.Id });
         }
 
-        await _client.BulkAsync(bulk, ct);
+        var bulkReq = new BulkRequest
+        {
+            Index = _options.IndexName,
+            Operations = operations
+        };
+
+        await _client.BulkAsync(bulkReq, ct);
     }
 
     public async Task DeleteAsync(string id, CancellationToken ct = default)
@@ -69,6 +68,9 @@ public class ElasticGameSearchService : IGameSearchService
                 )
             )
         , ct);
+
+        // cria um alias 'games' apontando para 'games-v1' (para compatibilidade)
+        await _client.Indices.PutAliasAsync(_options.IndexName, "games", ct);
     }
 
     public async Task<AggregateDictionary> GetPopularGamesAggregationAsync(int size = 10, CancellationToken ct = default)
@@ -90,23 +92,32 @@ public class ElasticGameSearchService : IGameSearchService
     public async Task IndexAsync(GameProjection projection, CancellationToken ct = default)
     {
         if (projection == null) throw new ArgumentNullException(nameof(projection));
-        await _client.IndexAsync(projection, i => i.Index(_options.IndexName).Id(projection.Id), ct);
+        await _client.IndexAsync(projection, i => i
+            .Index(_options.IndexName)
+            .Id(projection.Id), ct);
     }
 
-    public async Task<SearchResponse<GameProjection>> SearchAsync(string query, int size = 20, CancellationToken ct = default)
+    public async Task<SimpleSearchResult<GameProjection>> SearchAsync(string query, int size = 20, CancellationToken ct = default)
     {
         var resp = await _client.SearchAsync<GameProjection>(s => s
             .Indices(_options.IndexName)
             .Size(size)
             .Query(q => q
                 .MultiMatch(m => m
-                    .Fields(new[] { "name", "description" }) // FIX: Use string field names instead of .Field(ff => ff.Name)
+                    .Fields(new[] { "name", "description" })
                     .Query(query)
                     .Fuzziness(new Fuzziness("AUTO"))
                 )
             ), ct);
 
-        return resp;
+
+        // Extrai apenas as fontes (GameProjection) dos hits
+        var hits = resp.Hits?.Select(h => h.Source!).Where(x => x != null).ToArray()
+                   ?? Array.Empty<GameProjection>();
+
+        long total = resp.Total != 0 ? resp.Total : hits.LongLength;
+
+        return new SimpleSearchResult<GameProjection>(hits, total);
     }
 
     public async Task UpdateAsync(Guid id, object patch, CancellationToken ct = default)

@@ -1,7 +1,16 @@
-﻿namespace TC.CloudGames.Games.Api.Endpoints
+﻿using TC.CloudGames.Games.Search;
+
+namespace TC.CloudGames.Games.Api.Endpoints
 {
     public sealed class CreateGameEndpoint : BaseApiEndpoint<CreateGameCommand, CreateGameResponse>
     {
+        private readonly IGameSearchService _searchService;
+
+        public CreateGameEndpoint(IGameSearchService searchService)
+        {
+            _searchService = searchService;
+        }
+
         public override void Configure()
         {
             Post("game");
@@ -30,6 +39,31 @@
 
             if (response.IsSuccess)
             {
+                // Mapeia para GameProjection antes de indexar
+                var projection = new GameProjection
+                {
+                    Id = response.Value.Id,
+                    Name = response.Value.Name,
+                    Description = response.Value.Description,
+                    ReleaseDate = response.Value.ReleaseDate,
+                    AgeRating = response.Value.AgeRating,
+                    Developer = response.Value.DeveloperInfo.Developer,
+                    Publisher = response.Value.DeveloperInfo.Publisher,
+                    PriceAmount = response.Value.Price,
+                    RatingAverage = response.Value.Rating,
+                    Genre = response.Value.GameDetails.Genre,
+                    Platforms = response.Value.GameDetails.Platforms,
+                    Tags = response.Value.GameDetails.Tags,
+                    GameMode = response.Value.GameDetails.GameMode,
+                    DistributionFormat = response.Value.GameDetails.DistributionFormat,
+                    AvailableLanguages = response.Value.GameDetails.AvailableLanguages,
+                    SupportsDlcs = response.Value.GameDetails.SupportsDlcs,
+                    GameStatus = response.Value.GameStatus
+                };
+
+                // Indexa no Elasticsearch
+                await _searchService.IndexAsync(projection, ct);
+
                 string location = $"{BaseURL}api/game/";
                 object routeValues = new { id = response.Value.Id };
                 await Send.CreatedAtAsync(location, routeValues, response.Value, cancellation: ct).ConfigureAwait(false);
