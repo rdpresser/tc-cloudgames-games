@@ -11,7 +11,11 @@ public static class ElasticClientFactory
     {
         var opts = configuration.GetSection("Elasticsearch").Get<ElasticSearchOptions>() ?? new ElasticSearchOptions();
 
+        if (string.IsNullOrWhiteSpace(opts.Url))
+            throw new InvalidOperationException("Elasticsearch URL não configurada. Verifique seu .env ou appsettings.json.");
+
         var uri = new Uri(opts.Url);
+
         var settings = new ElasticsearchClientSettings(uri);
 
         if (!string.IsNullOrWhiteSpace(opts.Username) && !string.IsNullOrWhiteSpace(opts.Password))
