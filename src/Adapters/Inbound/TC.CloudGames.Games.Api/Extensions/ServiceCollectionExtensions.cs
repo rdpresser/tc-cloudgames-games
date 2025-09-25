@@ -189,9 +189,10 @@ namespace TC.CloudGames.Games.Api.Extensions
                         opts.PublishMessage<EventContext<GameDeactivatedIntegrationEvent>>()
                             .ToRabbitExchange(exchangeName);
 
-                        // Configura o endpoint de envio
+                        // CONFIGURAÇÃO RPC PARA PAYMENT - IMPORTANTE: Deve ser exatamente igual ao Payments API
                         opts.PublishMessage<ChargePaymentRequest>()
-                            .ToRabbitQueue("charge-payment-queue");
+                            .ToRabbitQueue("charge-payment-queue")
+                            .UseDurableOutbox();
 
                         // Declara fila para eventos de Users
                         opts.ListenToRabbitQueue($"games.{mq.ListenUserExchange}-queue", configure =>
@@ -214,8 +215,10 @@ namespace TC.CloudGames.Games.Api.Extensions
 
                         var topicName = $"{sb.TopicName}-topic";
 
+                        // CONFIGURAÇÃO RPC PARA PAYMENT - Azure Service Bus
                         opts.PublishMessage<ChargePaymentRequest>()
-                            .ToAzureServiceBusQueue("payments-rpc-queue");
+                            .ToAzureServiceBusQueue("charge-payment-queue")
+                            .UseDurableOutbox();
 
                         // PAYMENTS API EVENTS -------------------------------
                         opts.RegisterPaymentEvents();
