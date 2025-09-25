@@ -13,8 +13,18 @@ public class SearchGamesEndpoint : Endpoint<SearchRequest>
 
     public override void Configure()
     {
-        Get("/games/search");
-        AllowAnonymous(); // só para teste
+        Get("game/search");
+        Roles(AppConstants.AdminRole);
+
+        Summary(s =>
+        {
+            s.Summary = "Endpoint for index a new game.";
+            s.Responses[200] = "Returned when the game list is successfully retrieved using the specified filters.";
+            s.Responses[201] = "Returned when a new game is successfully created.";
+            s.Responses[400] = "Returned when a bad request occurs.";
+            s.Responses[403] = "Returned when the caller lacks the required role to access this endpoint.";
+            s.Responses[401] = "Returned when the request is made without a valid user token.";
+        });
     }
 
     public override async Task HandleAsync(SearchRequest req, CancellationToken ct)
