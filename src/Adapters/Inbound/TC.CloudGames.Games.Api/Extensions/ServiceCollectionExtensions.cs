@@ -170,34 +170,59 @@ namespace TC.CloudGames.Games.Api.Extensions
 
                         // Durable outbox
                         opts.Policies.UseDurableOutboxOnAllSendingEndpoints();
+                        opts.Policies.UseDurableInboxOnAllListeners();
 
-                        var exchangeName = $"{mq.Exchange}-exchange";
+                        ////var exchangeName = $"{mq.Exchange}-exchange";
                         // Register messages
-                        opts.PublishMessage<EventContext<GameBasicInfoUpdatedIntegrationEvent>>()
-                            .ToRabbitExchange(exchangeName)
-                            .UseDurableOutbox();
-                        opts.PublishMessage<EventContext<GamePriceUpdatedIntegrationEvent>>()
-                            .ToRabbitExchange(exchangeName)
-                            .UseDurableOutbox();
-                        opts.PublishMessage<EventContext<GameStatusUpdatedIntegrationEvent>>()
-                            .ToRabbitExchange(exchangeName)
-                            .UseDurableOutbox();
-                        opts.PublishMessage<EventContext<GameRatingUpdatedIntegrationEvent>>()
-                            .ToRabbitExchange(exchangeName)
-                            .UseDurableOutbox();
-                        opts.PublishMessage<EventContext<GameDetailsUpdatedIntegrationEvent>>()
-                            .ToRabbitExchange(exchangeName)
-                            .UseDurableOutbox();
-                        opts.PublishMessage<EventContext<GameActivatedIntegrationEvent>>()
-                            .ToRabbitExchange(exchangeName)
-                            .UseDurableOutbox();
-                        opts.PublishMessage<EventContext<GameDeactivatedIntegrationEvent>>()
-                            .ToRabbitExchange(exchangeName)
-                            .UseDurableOutbox();
+                        ////opts.PublishMessage<EventContext<GameCreatedIntegrationEvent>>()
+                        ////    .ToRabbitExchange(exchangeName)
+                        ////    .BufferedInMemory()
+                        ////    .UseDurableOutbox();
+
+                        ////opts.PublishMessage<EventContext<GameBasicInfoUpdatedIntegrationEvent>>()
+                        ////    .ToRabbitExchange(exchangeName)
+                        ////    .BufferedInMemory()
+                        ////    .UseDurableOutbox();
+
+                        ////opts.PublishMessage<EventContext<GamePriceUpdatedIntegrationEvent>>()
+                        ////    .ToRabbitExchange(exchangeName)
+                        ////    .BufferedInMemory()
+                        ////    .UseDurableOutbox();
+
+                        ////opts.PublishMessage<EventContext<GameStatusUpdatedIntegrationEvent>>()
+                        ////    .ToRabbitExchange(exchangeName)
+                        ////    .BufferedInMemory()
+                        ////    .UseDurableOutbox();
+
+                        ////opts.PublishMessage<EventContext<GameRatingUpdatedIntegrationEvent>>()
+                        ////    .ToRabbitExchange(exchangeName)
+                        ////    .BufferedInMemory()
+                        ////    .UseDurableOutbox();
+
+                        ////opts.PublishMessage<EventContext<GameDetailsUpdatedIntegrationEvent>>()
+                        ////    .ToRabbitExchange(exchangeName)
+                        ////    .BufferedInMemory()
+                        ////    .UseDurableOutbox();
+
+                        ////opts.PublishMessage<EventContext<GameActivatedIntegrationEvent>>()
+                        ////    .ToRabbitExchange(exchangeName)
+                        ////    .BufferedInMemory()
+                        ////    .UseDurableOutbox();
+
+                        ////opts.PublishMessage<EventContext<GameDeactivatedIntegrationEvent>>()
+                        ////    .ToRabbitExchange(exchangeName)
+                        ////    .BufferedInMemory()
+                        ////    .UseDurableOutbox();
+
+                        ////opts.PublishMessage<EventContext<GamePurchasedIntegrationEvent>>()
+                        ////    .ToRabbitExchange(exchangeName)
+                        ////    .BufferedInMemory()
+                        ////    .UseDurableOutbox();
 
                         // CONFIGURAÇÃO RPC PARA PAYMENT - IMPORTANTE: Deve ser exatamente igual ao Payments API
                         opts.PublishMessage<ChargePaymentRequest>()
                             .ToRabbitQueue("charge-payment-queue")
+                            ////.BufferedInMemory()
                             .UseDurableOutbox();
 
                         // Declara fila para eventos de Users
@@ -219,8 +244,9 @@ namespace TC.CloudGames.Games.Api.Extensions
 
                         // Durable outbox for all sending endpoints
                         opts.Policies.UseDurableOutboxOnAllSendingEndpoints();
+                        opts.Policies.UseDurableInboxOnAllListeners();
 
-                        var topicName = $"{sb.TopicName}-topic";
+                        ////var topicName = $"{sb.TopicName}-topic";
 
                         // CONFIGURAÇÃO RPC PARA PAYMENT - Azure Service Bus
                         opts.PublishMessage<ChargePaymentRequest>()
@@ -234,13 +260,67 @@ namespace TC.CloudGames.Games.Api.Extensions
                         opts.RegisterUserEvents();
 
                         // GAMES API EVENTS -------------------------------
-                        opts.RegisterGameEvents();
+                        ////opts.RegisterGameEvents();
 
-                        opts.PublishAllMessages()
-                            .ToAzureServiceBusTopic(topicName)
-                            .CustomizeOutgoing(e => e.Headers["DomainAggregate"] = "GameAggregate")
-                            .UseDurableOutbox()
-                            .BufferedInMemory();
+                        ////opts.PublishMessage<EventContext<GameCreatedIntegrationEvent>>()
+                        ////    .ToAzureServiceBusTopic(topicName)
+                        ////    .CustomizeOutgoing(e => e.Headers["DomainAggregate"] = "GameAggregate")
+                        ////    .BufferedInMemory()
+                        ////    .UseDurableOutbox();
+
+                        ////opts.PublishMessage<EventContext<GameBasicInfoUpdatedIntegrationEvent>>()
+                        ////    .ToAzureServiceBusTopic(topicName)
+                        ////    .CustomizeOutgoing(e => e.Headers["DomainAggregate"] = "GameAggregate")
+                        ////    .BufferedInMemory()
+                        ////    .UseDurableOutbox();
+
+                        ////opts.PublishMessage<EventContext<GamePriceUpdatedIntegrationEvent>>()
+                        ////    .ToAzureServiceBusTopic(topicName)
+                        ////    .CustomizeOutgoing(e => e.Headers["DomainAggregate"] = "GameAggregate")
+                        ////    .BufferedInMemory()
+                        ////    .UseDurableOutbox();
+
+                        ////opts.PublishMessage<EventContext<GameStatusUpdatedIntegrationEvent>>()
+                        ////    .ToAzureServiceBusTopic(topicName)
+                        ////    .CustomizeOutgoing(e => e.Headers["DomainAggregate"] = "GameAggregate")
+                        ////    .BufferedInMemory()
+                        ////    .UseDurableOutbox();
+
+                        ////opts.PublishMessage<EventContext<GameRatingUpdatedIntegrationEvent>>()
+                        ////    .ToAzureServiceBusTopic(topicName)
+                        ////    .CustomizeOutgoing(e => e.Headers["DomainAggregate"] = "GameAggregate")
+                        ////    .BufferedInMemory()
+                        ////    .UseDurableOutbox();
+
+                        ////opts.PublishMessage<EventContext<GameDetailsUpdatedIntegrationEvent>>()
+                        ////    .ToAzureServiceBusTopic(topicName)
+                        ////    .CustomizeOutgoing(e => e.Headers["DomainAggregate"] = "GameAggregate")
+                        ////    .BufferedInMemory()
+                        ////    .UseDurableOutbox();
+
+                        ////opts.PublishMessage<EventContext<GameActivatedIntegrationEvent>>()
+                        ////    .ToAzureServiceBusTopic(topicName)
+                        ////    .CustomizeOutgoing(e => e.Headers["DomainAggregate"] = "GameAggregate")
+                        ////    .BufferedInMemory()
+                        ////    .UseDurableOutbox();
+
+                        ////opts.PublishMessage<EventContext<GameDeactivatedIntegrationEvent>>()
+                        ////    .ToAzureServiceBusTopic(topicName)
+                        ////    .CustomizeOutgoing(e => e.Headers["DomainAggregate"] = "GameAggregate")
+                        ////    .BufferedInMemory()
+                        ////    .UseDurableOutbox();
+
+                        ////opts.PublishMessage<EventContext<GamePurchasedIntegrationEvent>>()
+                        ////    .ToAzureServiceBusTopic(topicName)
+                        ////    .CustomizeOutgoing(e => e.Headers["DomainAggregate"] = "GameAggregate")
+                        ////    .BufferedInMemory()
+                        ////    .UseDurableOutbox();
+
+                        ////opts.PublishAllMessages()
+                        ////    .ToAzureServiceBusTopic(topicName)
+                        ////    .CustomizeOutgoing(e => e.Headers["DomainAggregate"] = "GameAggregate")
+                        ////    .BufferedInMemory()
+                        ////    .UseDurableOutbox();
 
                         opts.ListenToAzureServiceBusSubscription(
                             subscriptionName: $"games.{sb.UsersTopicName}-subscription",
@@ -258,7 +338,8 @@ namespace TC.CloudGames.Games.Api.Extensions
                                 configure.Name = "UsersDomainAggregateFilter";
                                 configure.Filter = new SqlRuleFilter("DomainAggregate = 'UserAggregate'");
                             })
-                        .FromTopic($"{sb.UsersTopicName}-topic");
+                        .FromTopic($"{sb.UsersTopicName}-topic")
+                        .UseDurableInbox();
 
                         break;
                 }
