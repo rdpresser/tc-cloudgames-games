@@ -57,9 +57,7 @@ public class GameIndexingHandler
 
     public async Task Handle(GamePlayedIntegrationEvent evt)
     {
-        // incrementa contador simples
-        var patch = new { PlayerCount = evt.Delta }; // alternativamente usar script para incrementar
-                                                   // usando Update with script seria ideal; aqui colocamos doc merge (assume pipeline aplica soma)
+        var patch = new { PlayerCount = evt.Delta };
         await _searchService.UpdateAsync(evt.Id, patch);
     }
 }

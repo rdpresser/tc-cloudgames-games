@@ -1,6 +1,4 @@
-﻿using Elastic.Clients.Elasticsearch;
-using Elastic.Clients.Elasticsearch.Aggregations;
-using TC.CloudGames.Games.Infrastructure.Projections;
+﻿using TC.CloudGames.Games.Infrastructure.Projections;
 
 namespace TC.CloudGames.Games.Search;
 

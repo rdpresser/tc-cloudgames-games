@@ -1,7 +1,6 @@
 ﻿using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Aggregations;
 using Elastic.Clients.Elasticsearch.Core.Bulk;
-using Elastic.Clients.Elasticsearch.Nodes;
 using TC.CloudGames.Games.Infrastructure.Projections;
 
 namespace TC.CloudGames.Games.Search;
@@ -69,7 +68,6 @@ public class ElasticGameSearchService : IGameSearchService
             )
         , ct);
 
-        // cria um alias 'games' apontando para 'games-v1' (para compatibilidade)
         await _client.Indices.PutAliasAsync(_options.IndexName, "games", ct);
     }
 
@@ -89,11 +87,9 @@ public class ElasticGameSearchService : IGameSearchService
         if (resp.Aggregations == null)
             return Enumerable.Empty<object>();
 
-        // Try to get the StringTermsAggregate for "top_games"
         if (!resp.Aggregations.TryGetAggregate<StringTermsAggregate>("top_games", out var termsAgg) || termsAgg == null)
             return Enumerable.Empty<object>();
 
-        // Map to a simple list
         return termsAgg.Buckets.Select(b => new
         {
             Genre = b.Key,
@@ -123,7 +119,6 @@ public class ElasticGameSearchService : IGameSearchService
             ), ct);
 
 
-        // Extrai apenas as fontes (GameProjection) dos hits
         var hits = resp.Hits?.Select(h => h.Source!).Where(x => x != null).ToArray()
                    ?? Array.Empty<GameProjection>();
 
