@@ -1,5 +1,4 @@
 ﻿using TC.CloudGames.Contracts.Events.Payments;
-using Wolverine.RabbitMQ;
 
 namespace TC.CloudGames.Games.Api.Extensions
 {
@@ -175,19 +174,26 @@ namespace TC.CloudGames.Games.Api.Extensions
                         var exchangeName = $"{mq.Exchange}-exchange";
                         // Register messages
                         opts.PublishMessage<EventContext<GameBasicInfoUpdatedIntegrationEvent>>()
-                            .ToRabbitExchange(exchangeName);
+                            .ToRabbitExchange(exchangeName)
+                            .UseDurableOutbox();
                         opts.PublishMessage<EventContext<GamePriceUpdatedIntegrationEvent>>()
-                            .ToRabbitExchange(exchangeName);
+                            .ToRabbitExchange(exchangeName)
+                            .UseDurableOutbox();
                         opts.PublishMessage<EventContext<GameStatusUpdatedIntegrationEvent>>()
-                            .ToRabbitExchange(exchangeName);
+                            .ToRabbitExchange(exchangeName)
+                            .UseDurableOutbox();
                         opts.PublishMessage<EventContext<GameRatingUpdatedIntegrationEvent>>()
-                            .ToRabbitExchange(exchangeName);
+                            .ToRabbitExchange(exchangeName)
+                            .UseDurableOutbox();
                         opts.PublishMessage<EventContext<GameDetailsUpdatedIntegrationEvent>>()
-                            .ToRabbitExchange(exchangeName);
+                            .ToRabbitExchange(exchangeName)
+                            .UseDurableOutbox();
                         opts.PublishMessage<EventContext<GameActivatedIntegrationEvent>>()
-                            .ToRabbitExchange(exchangeName);
+                            .ToRabbitExchange(exchangeName)
+                            .UseDurableOutbox();
                         opts.PublishMessage<EventContext<GameDeactivatedIntegrationEvent>>()
-                            .ToRabbitExchange(exchangeName);
+                            .ToRabbitExchange(exchangeName)
+                            .UseDurableOutbox();
 
                         // CONFIGURAÇÃO RPC PARA PAYMENT - IMPORTANTE: Deve ser exatamente igual ao Payments API
                         opts.PublishMessage<ChargePaymentRequest>()
@@ -199,7 +205,8 @@ namespace TC.CloudGames.Games.Api.Extensions
                             {
                                 configure.IsDurable = mq.Durable;
                                 configure.BindExchange(exchangeName: $"{mq.ListenUserExchange}-exchange");
-                            });
+                            })
+                        .UseDurableInbox();
 
                         break;
 
