@@ -39,29 +39,7 @@ namespace TC.CloudGames.Games.Api.Endpoints
 
             if (response.IsSuccess)
             {
-                // Mapeia para GameProjection antes de indexar
-                var projection = new GameProjection
-                {
-                    Id = response.Value.Id,
-                    Name = response.Value.Name,
-                    Description = response.Value.Description,
-                    ReleaseDate = response.Value.ReleaseDate,
-                    AgeRating = response.Value.AgeRating,
-                    Developer = response.Value.DeveloperInfo.Developer,
-                    Publisher = response.Value.DeveloperInfo.Publisher,
-                    PriceAmount = response.Value.Price,
-                    RatingAverage = response.Value.Rating,
-                    Genre = response.Value.GameDetails.Genre,
-                    Platforms = response.Value.GameDetails.Platforms,
-                    Tags = response.Value.GameDetails.Tags,
-                    GameMode = response.Value.GameDetails.GameMode,
-                    DistributionFormat = response.Value.GameDetails.DistributionFormat,
-                    AvailableLanguages = response.Value.GameDetails.AvailableLanguages,
-                    SupportsDlcs = response.Value.GameDetails.SupportsDlcs,
-                    GameStatus = response.Value.GameStatus
-                };
-
-                // Indexa no Elasticsearch
+                var projection = MapToProjection(response.Value);
                 await _searchService.IndexAsync(projection, ct);
 
                 string location = $"{BaseURL}api/game/";
@@ -127,5 +105,26 @@ namespace TC.CloudGames.Games.Api.Endpoints
                 GameStatus: GameAggregate.ValidGameStatus.First()
             );
         }
+
+        private static GameProjection MapToProjection(CreateGameResponse response) => new()
+        {
+            Id = response.Id,
+            Name = response.Name,
+            Description = response.Description,
+            ReleaseDate = response.ReleaseDate,
+            AgeRating = response.AgeRating,
+            Developer = response.DeveloperInfo.Developer,
+            Publisher = response.DeveloperInfo.Publisher,
+            PriceAmount = response.Price,
+            RatingAverage = response.Rating,
+            Genre = response.GameDetails.Genre,
+            Platforms = response.GameDetails.Platforms,
+            Tags = response.GameDetails.Tags,
+            GameMode = response.GameDetails.GameMode,
+            DistributionFormat = response.GameDetails.DistributionFormat,
+            AvailableLanguages = response.GameDetails.AvailableLanguages,
+            SupportsDlcs = response.GameDetails.SupportsDlcs,
+            GameStatus = response.GameStatus
+        };
     }
 }
