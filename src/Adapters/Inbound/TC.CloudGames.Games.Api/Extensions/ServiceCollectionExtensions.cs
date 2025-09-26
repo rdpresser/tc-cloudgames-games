@@ -1,6 +1,4 @@
-﻿using TC.CloudGames.Contracts.Events.Payments;
-
-namespace TC.CloudGames.Games.Api.Extensions
+﻿namespace TC.CloudGames.Games.Api.Extensions
 {
     internal static class ServiceCollectionExtensions
     {
@@ -132,6 +130,7 @@ namespace TC.CloudGames.Games.Api.Extensions
             builder.Host.UseWolverine(opts =>
             {
                 opts.UseSystemTextJsonForSerialization();
+                opts.ApplicationAssembly = typeof(Program).Assembly;
                 opts.Discovery.IncludeAssembly(typeof(UserSnapshotProjectionHandler).Assembly);
 
                 // -------------------------------
@@ -172,12 +171,14 @@ namespace TC.CloudGames.Games.Api.Extensions
                         opts.Policies.UseDurableOutboxOnAllSendingEndpoints();
                         opts.Policies.UseDurableInboxOnAllListeners();
 
-                        ////var exchangeName = $"{mq.Exchange}-exchange";
+                        var exchangeName = $"{mq.Exchange}-exchange";
                         // Register messages
-                        ////opts.PublishMessage<EventContext<GameCreatedIntegrationEvent>>()
-                        ////    .ToRabbitExchange(exchangeName)
-                        ////    .BufferedInMemory()
-                        ////    .UseDurableOutbox();
+                        opts.PublishMessage<EventContext<GameCreatedIntegrationEvent>>()
+                            .ToRabbitExchange(exchangeName)
+                            .BufferedInMemory()
+                            .UseDurableOutbox();
+
+                        #region Games API EVENTS
 
                         ////opts.PublishMessage<EventContext<GameBasicInfoUpdatedIntegrationEvent>>()
                         ////    .ToRabbitExchange(exchangeName)
@@ -213,16 +214,11 @@ namespace TC.CloudGames.Games.Api.Extensions
                         ////    .ToRabbitExchange(exchangeName)
                         ////    .BufferedInMemory()
                         ////    .UseDurableOutbox();
+                        #endregion
 
-                        ////opts.PublishMessage<EventContext<GamePurchasedIntegrationEvent>>()
-                        ////    .ToRabbitExchange(exchangeName)
-                        ////    .BufferedInMemory()
-                        ////    .UseDurableOutbox();
-
-                        // CONFIGURAÇÃO RPC PARA PAYMENT - IMPORTANTE: Deve ser exatamente igual ao Payments API
-                        opts.PublishMessage<ChargePaymentRequest>()
-                            .ToRabbitQueue("charge-payment-queue")
-                            ////.BufferedInMemory()
+                        opts.PublishMessage<EventContext<GamePurchasedIntegrationEvent>>()
+                            .ToRabbitExchange(exchangeName)
+                            .BufferedInMemory()
                             .UseDurableOutbox();
 
                         // Declara fila para eventos de Users
@@ -231,6 +227,14 @@ namespace TC.CloudGames.Games.Api.Extensions
                                 configure.IsDurable = mq.Durable;
                                 configure.BindExchange(exchangeName: $"{mq.ListenUserExchange}-exchange");
                             })
+                        .UseDurableInbox();
+
+                        // Declara fila para eventos de PAYMENTS
+                        opts.ListenToRabbitQueue($"games.{mq.ListenPaymentExchange}-queue", configure =>
+                        {
+                            configure.IsDurable = mq.Durable;
+                            configure.BindExchange(exchangeName: $"{mq.ListenPaymentExchange}-exchange");
+                        })
                         .UseDurableInbox();
 
                         break;
@@ -246,13 +250,6 @@ namespace TC.CloudGames.Games.Api.Extensions
                         opts.Policies.UseDurableOutboxOnAllSendingEndpoints();
                         opts.Policies.UseDurableInboxOnAllListeners();
 
-                        ////var topicName = $"{sb.TopicName}-topic";
-
-                        // CONFIGURAÇÃO RPC PARA PAYMENT - Azure Service Bus
-                        opts.PublishMessage<ChargePaymentRequest>()
-                            .ToAzureServiceBusQueue("charge-payment-queue")
-                            .UseDurableOutbox();
-
                         // PAYMENTS API EVENTS -------------------------------
                         opts.RegisterPaymentEvents();
 
@@ -260,14 +257,22 @@ namespace TC.CloudGames.Games.Api.Extensions
                         opts.RegisterUserEvents();
 
                         // GAMES API EVENTS -------------------------------
-                        ////opts.RegisterGameEvents();
+                        opts.RegisterGameEvents();
 
-                        ////opts.PublishMessage<EventContext<GameCreatedIntegrationEvent>>()
-                        ////    .ToAzureServiceBusTopic(topicName)
-                        ////    .CustomizeOutgoing(e => e.Headers["DomainAggregate"] = "GameAggregate")
-                        ////    .BufferedInMemory()
-                        ////    .UseDurableOutbox();
+                        var topicName = $"{sb.TopicName}-topic";
+                        opts.PublishMessage<EventContext<GameCreatedIntegrationEvent>>()
+                            .ToAzureServiceBusTopic(topicName)
+                            .CustomizeOutgoing(e => e.Headers["DomainAggregate"] = "GameAggregate")
+                            .BufferedInMemory()
+                            .UseDurableOutbox();
 
+                        opts.PublishMessage<EventContext<GamePurchasedIntegrationEvent>>()
+                            .ToAzureServiceBusTopic(topicName)
+                            .CustomizeOutgoing(e => e.Headers["DomainAggregate"] = "GameAggregate")
+                            .BufferedInMemory()
+                            .UseDurableOutbox();
+
+                        #region Games API EVENTS
                         ////opts.PublishMessage<EventContext<GameBasicInfoUpdatedIntegrationEvent>>()
                         ////    .ToAzureServiceBusTopic(topicName)
                         ////    .CustomizeOutgoing(e => e.Headers["DomainAggregate"] = "GameAggregate")
@@ -310,18 +315,9 @@ namespace TC.CloudGames.Games.Api.Extensions
                         ////    .BufferedInMemory()
                         ////    .UseDurableOutbox();
 
-                        ////opts.PublishMessage<EventContext<GamePurchasedIntegrationEvent>>()
-                        ////    .ToAzureServiceBusTopic(topicName)
-                        ////    .CustomizeOutgoing(e => e.Headers["DomainAggregate"] = "GameAggregate")
-                        ////    .BufferedInMemory()
-                        ////    .UseDurableOutbox();
+                        #endregion
 
-                        ////opts.PublishAllMessages()
-                        ////    .ToAzureServiceBusTopic(topicName)
-                        ////    .CustomizeOutgoing(e => e.Headers["DomainAggregate"] = "GameAggregate")
-                        ////    .BufferedInMemory()
-                        ////    .UseDurableOutbox();
-
+                        // Declare subscription for USER events
                         opts.ListenToAzureServiceBusSubscription(
                             subscriptionName: $"games.{sb.UsersTopicName}-subscription",
                             configureSubscriptions: configure =>
@@ -339,6 +335,23 @@ namespace TC.CloudGames.Games.Api.Extensions
                                 configure.Filter = new SqlRuleFilter("DomainAggregate = 'UserAggregate'");
                             })
                         .FromTopic($"{sb.UsersTopicName}-topic")
+                        .UseDurableInbox();
+
+                        // Declare subscription for PAYMENT events
+                        opts.ListenToAzureServiceBusSubscription(
+                            subscriptionName: $"games.{sb.PaymentsTopicName}-subscription",
+                            configureSubscriptions: configure =>
+                            {
+                                configure.TopicName = $"{sb.PaymentsTopicName}-topic";
+                                configure.MaxDeliveryCount = sb.MaxDeliveryCount;
+                                configure.DeadLetteringOnMessageExpiration = sb.EnableDeadLettering;
+                            },
+                            configureSubscriptionRule: configure =>
+                            {
+                                configure.Name = "PaymentsDomainAggregateFilter";
+                                configure.Filter = new SqlRuleFilter("DomainAggregate = 'PaymentAggregate'");
+                            })
+                        .FromTopic($"{sb.PaymentsTopicName}-topic")
                         .UseDurableInbox();
 
                         break;

@@ -1,15 +1,10 @@
-﻿using Polly;
-using Polly.Retry;
-using Wolverine.Runtime.RemoteInvocation;
-
-namespace TC.CloudGames.Games.Application.UseCases.PurchaseGame
+﻿namespace TC.CloudGames.Games.Application.UseCases.PurchaseGame
 {
     internal sealed class PurchaseGameCommandHandler
         : BaseCommandHandler<PurchaseGameCommand, PurchaseGameResponse, UserGameLibraryAggregate, IUserGameLibraryRepository>
     {
         private readonly IGameRepository _gameRepository;
         private readonly IMartenOutbox _outbox;
-        private readonly IMessageBus _messageBus;
         private readonly ILogger<PurchaseGameCommandHandler> _logger;
 
         public PurchaseGameCommandHandler(
@@ -23,7 +18,6 @@ namespace TC.CloudGames.Games.Application.UseCases.PurchaseGame
         {
             _gameRepository = gameRepository ?? throw new ArgumentNullException(nameof(gameRepository));
             _outbox = outbox ?? throw new ArgumentNullException(nameof(outbox));
-            _messageBus = messageBus ?? throw new ArgumentNullException(nameof(messageBus));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -40,69 +34,8 @@ namespace TC.CloudGames.Games.Application.UseCases.PurchaseGame
                 return Result<UserGameLibraryAggregate>.Invalid(new ValidationError("Game.NotFound", $"Game with ID {command.GameId} not found."));
             }
 
-            _logger.LogInformation("Iniciando processo de pagamento para User {UserId}, Game {GameId}, Valor {Amount}", 
-                UserContext.Id, command.GameId, game.Price);
-
-            // Configure retry policy for Wolverine message bus calls
-            var retryPolicy = new ResiliencePipelineBuilder()
-                .AddRetry(new RetryStrategyOptions
-                {
-                    ShouldHandle = new PredicateBuilder().Handle<WolverineRequestReplyException>()
-                        .Handle<TimeoutException>()
-                        .Handle<InvalidOperationException>(ex => ex.Message.Contains("Unable to determine how to send message")),
-                    MaxRetryAttempts = 3,
-                    DelayGenerator = static args =>
-                    {
-                        var delay = TimeSpan.FromSeconds(Math.Pow(2, args.AttemptNumber)) + 
-                                   TimeSpan.FromMilliseconds(Random.Shared.Next(0, 250)); // jitter
-                        return new ValueTask<TimeSpan?>(delay);
-                    },
-                    OnRetry = args =>
-                    {
-                        _logger.LogWarning("[Retry {AttemptNumber}] Falha ao chamar Payments. Tentando novamente em {Delay}. Erro: {ErrorMessage}",
-                            args.AttemptNumber, args.RetryDelay, args.Outcome.Exception?.Message);
-                        return default;
-                    }
-                })
-                .Build();
-
-            // Call the external payment API - Wolverine MessageBroker RPC request/response with retry
-            ChargePaymentResponse paymentResult;
-            try
-            {
-                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-                
-                paymentResult = await retryPolicy.ExecuteAsync(async (cancellationToken) =>
-                {
-                    _logger.LogDebug("Enviando requisição de pagamento para Payments service");
-                    
-                    return await _messageBus.InvokeAsync<ChargePaymentResponse>(
-                        new ChargePaymentRequest(UserContext.Id, command.GameId, game.Price, command.PaymentMethod.Method),
-                        timeout: TimeSpan.FromSeconds(30),
-                        cancellation: cancellationToken);
-                }, ct);
-
-                stopwatch.Stop();
-                _logger.LogInformation("Pagamento processado com sucesso em {ElapsedMs}ms para PaymentId {PaymentId}", 
-                    stopwatch.ElapsedMilliseconds, paymentResult.PaymentId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Falha definitiva ao processar pagamento após todas as tentativas para User {UserId}, Game {GameId}", 
-                    UserContext.Id, command.GameId);
-                return Result<UserGameLibraryAggregate>.Invalid(new ValidationError("Payment.ServiceUnavailable", 
-                    "O serviço de pagamento está indisponível no momento. Tente novamente mais tarde."));
-            }
-
-            if (!paymentResult.Success)
-            {
-                _logger.LogWarning("Pagamento rejeitado: {ErrorMessage} para User {UserId}, Game {GameId}", 
-                    paymentResult.ErrorMessage, UserContext.Id, command.GameId);
-                return Result.Invalid(new ValidationError("ChargePaymentRequest.Error", paymentResult.ErrorMessage));
-            }
-
             // Map to aggregate
-            var aggregateResult = PurchaseGameMapper.ToAggregate(command, UserContext.Id, paymentResult.PaymentId!.Value, game.Name, game.Price);
+            var aggregateResult = PurchaseGameMapper.ToAggregate(command, UserContext.Id, Guid.NewGuid(), game.Name, game.Price);
             if (!aggregateResult.IsSuccess)
             {
                 return Result<UserGameLibraryAggregate>.Invalid(aggregateResult.ValidationErrors);
@@ -187,7 +120,7 @@ namespace TC.CloudGames.Games.Application.UseCases.PurchaseGame
             // 5. Commit changes
             await Repository.CommitAsync(aggregate, ct).ConfigureAwait(false);
 
-            _logger.LogInformation("Purchase completed successfully for User {UserId}, Game {GameId}", UserContext.Id, command.GameId);
+            _logger.LogInformation("Purchase with pending approval completed successfully for User {UserId}, Game {GameId}", UserContext.Id, command.GameId);
 
             // 6. Map to response
             return PurchaseGameMapper.FromAggregate(aggregate);
