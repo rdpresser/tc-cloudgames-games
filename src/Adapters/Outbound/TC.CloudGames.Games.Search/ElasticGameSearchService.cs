@@ -79,7 +79,7 @@ public class ElasticGameSearchService : IGameSearchService
             .Aggregations(a => a
                 .Add("top_games", new TermsAggregation
                 {
-                    Field = "genre",
+                    Field = "genre.keyword",
                     Size = size
                 })
             ), ct);
