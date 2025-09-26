@@ -35,7 +35,7 @@
             }
 
             // Map to aggregate
-            var aggregateResult = PurchaseGameMapper.ToAggregate(command, UserContext.Id, Guid.NewGuid(), game.Name, game.Price);
+            var aggregateResult = PurchaseGameMapper.ToAggregate(command, UserContext.Id, game.Name, game.Price);
             if (!aggregateResult.IsSuccess)
             {
                 return Result<UserGameLibraryAggregate>.Invalid(aggregateResult.ValidationErrors);

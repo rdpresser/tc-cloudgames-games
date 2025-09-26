@@ -2,14 +2,14 @@
 {
     public static class PurchaseGameMapper
     {
-        public static Result<UserGameLibraryAggregate> ToAggregate(PurchaseGameCommand command, Guid userId, Guid paymentId, string gameName, decimal amount)
+        public static Result<UserGameLibraryAggregate> ToAggregate(PurchaseGameCommand command, Guid userId, string gameName, decimal amount)
         {
             try
             {
                 var aggregate = UserGameLibraryAggregate.Create(
                     userId: userId,
                     gameId: command.GameId,
-                    paymentId: paymentId,
+                    paymentId: Guid.NewGuid(),
                     gameName: gameName,
                     amount: amount
                 );
@@ -37,6 +37,7 @@
 
         public static GamePurchasedIntegrationEvent ToIntegrationEvent(UserGameLibraryAggregate.UserGameLibraryCreatedDomainEvent domainEvent)
         => new(
+                domainEvent.AggregateId, // UserGameLibraryAggregate Id
                 domainEvent.UserId,
                 domainEvent.GameId,
                 domainEvent.PaymentId,

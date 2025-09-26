@@ -8,6 +8,7 @@ namespace TC.CloudGames.Games.Infrastructure.Projections
         {
             var projection = new UserGameLibraryProjection
             {
+                Id = @event.AggregateId,
                 UserId = @event.UserId,
                 GameId = @event.GameId,
                 PaymentId = @event.PaymentId,
@@ -18,6 +19,20 @@ namespace TC.CloudGames.Games.Infrastructure.Projections
                 UpdatedAt = null,
                 IsActive = true
             };
+            operations.Store(projection);
+        }
+
+        public static async Task Project(UserGameLibraryGamePaymentStatusUpdateDomainEvent @event, IDocumentOperations operations)
+        {
+            var projection = await operations.LoadAsync<UserGameLibraryProjection>(@event.AggregateId).ConfigureAwait(false);
+            if (projection == null) return;
+
+            projection.Id = @event.AggregateId;
+            projection.UserId = @event.UserId;
+
+            // TODO: Consider if we need to update GameId, PaymentId, GameName, Amount, PurchaseDate on payment status update
+
+            projection.UpdatedAt = @event.OccurredOn;
             operations.Store(projection);
         }
     }

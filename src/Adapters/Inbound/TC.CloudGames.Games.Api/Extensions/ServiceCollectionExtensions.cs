@@ -442,8 +442,7 @@
                     .Duplicate(x => x.IsActive, pgType: "boolean");
 
                 options.Schema.For<UserGameLibraryProjection>()
-                    .Index(x => x.GameName, x => { x.Casing = ComputedIndex.Casings.Lower; x.Method = IndexMethod.btree; x.Name = "idx_usergamelibrary_game_name_lower"; })
-                    .Identity(member: x => x.PaymentId);
+                    .Index(x => x.GameName, x => { x.Casing = ComputedIndex.Casings.Lower; x.Method = IndexMethod.btree; x.Name = "idx_usergamelibrary_game_name_lower"; });
 
                 // GIN index on JSONB
                 options.Schema.For<UserGameLibraryProjection>().GinIndexJsonData();

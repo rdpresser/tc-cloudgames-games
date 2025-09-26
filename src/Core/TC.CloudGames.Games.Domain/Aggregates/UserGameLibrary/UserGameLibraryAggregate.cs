@@ -11,6 +11,8 @@
         public Guid PaymentId { get; private set; }
         public string GameName { get; private set; } = string.Empty;
         public decimal Amount { get; private set; }
+        public bool IsApproved { get; private set; }
+        public string? ErrorMessage { get; private set; }
         public DateTimeOffset PurchaseDate { get; private set; } = DateTimeOffset.UtcNow;
 
         // Parameterless constructor for ORM / Event Sourcing
@@ -63,9 +65,8 @@
             AddNewEvent(@event);
             switch (@event)
             {
-                case UserGameLibraryCreatedDomainEvent createdEvent:
-                    Apply(createdEvent);
-                    break;
+                case UserGameLibraryCreatedDomainEvent createdEvent: Apply(createdEvent); break;
+                case UserGameLibraryGamePaymentStatusUpdateDomainEvent statusUpdateEvent: Apply(statusUpdateEvent); break;
             }
         }
 
@@ -78,12 +79,40 @@
             PurchaseDate = @event.PurchaseDate;
             GameName = @event.GameName;
             Amount = @event.Amount;
+            IsApproved = false;
+            ErrorMessage = null;
             SetCreatedAt(@event.OccurredOn);
         }
 
+        public void Apply(UserGameLibraryGamePaymentStatusUpdateDomainEvent @event)
+        {
+            SetId(@event.AggregateId);
+            UserId = @event.UserId;
+            GameId = @event.GameId;
+            PaymentId = @event.PaymentId;
+            IsApproved = @event.IsApproved;
+            ErrorMessage = @event.ErrorMessage;
+            SetUpdatedAt(@event.OccurredOn);
+        }
         #endregion
 
+        public Result UpdateGamePaymentStatus(bool isApproved, string? errorMessage)
+        {
+            var @event = new UserGameLibraryGamePaymentStatusUpdateDomainEvent(Id, UserId, GameId, PaymentId, isApproved, errorMessage);
+            ApplyEvent(@event);
+            return Result.Success();
+        }
+
         #region Domain Events
+
+        public record UserGameLibraryGamePaymentStatusUpdateDomainEvent(
+            Guid AggregateId,
+            Guid UserId,
+            Guid GameId,
+            Guid PaymentId,
+            bool IsApproved,
+            string? ErrorMessage,
+            DateTimeOffset OccurredOn = default) : BaseDomainEvent(AggregateId, OccurredOn == default ? DateTimeOffset.UtcNow : OccurredOn);
 
         /// <summary>
         /// Event triggered when a new game is purchased and added to a user's library.
