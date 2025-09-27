@@ -1,4 +1,6 @@
-﻿namespace TC.CloudGames.Games.Domain.Aggregates.UserGameLibrary
+﻿using System.Text.Json.Serialization;
+
+namespace TC.CloudGames.Games.Domain.Aggregates.UserGameLibrary
 {
     /// <summary>
     /// Aggregate root representing a purchased game by a user.
@@ -16,6 +18,24 @@
         public DateTimeOffset PurchaseDate { get; private set; } = DateTimeOffset.UtcNow;
 
         // Parameterless constructor for ORM / Event Sourcing
+
+        [JsonConstructor]
+        public UserGameLibraryAggregate(Guid id, Guid userId, Guid gameId, Guid paymentId, string gameName, decimal amount, bool isApproved, string? errorMessage, DateTimeOffset purchaseDate, DateTimeOffset createdAt, DateTimeOffset? updatedAt, bool isActive)
+        {
+            SetId(id);
+            UserId = userId;
+            GameId = gameId;
+            PaymentId = paymentId;
+            GameName = gameName;
+            Amount = amount;
+            IsApproved = isApproved;
+            ErrorMessage = errorMessage;
+            PurchaseDate = purchaseDate;
+            SetCreatedAt(createdAt);
+            SetUpdatedAt(updatedAt);
+            SetActive(isActive);
+        }
+
         public UserGameLibraryAggregate() : base() { }
 
         // Private constructor for factory methods

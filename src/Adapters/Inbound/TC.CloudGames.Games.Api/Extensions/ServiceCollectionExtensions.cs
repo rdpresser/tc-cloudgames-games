@@ -1,4 +1,7 @@
-﻿namespace TC.CloudGames.Games.Api.Extensions
+﻿using Marten.Events.Projections;
+using TC.CloudGames.Games.Domain.Aggregates.UserGameLibrary;
+
+namespace TC.CloudGames.Games.Api.Extensions
 {
     internal static class ServiceCollectionExtensions
     {
@@ -404,6 +407,9 @@
 
                 options.Projections.Add<GameProjectionHandler>(ProjectionLifecycle.Inline);
                 options.Projections.Add<UserGameLibraryProjectionHandler>(ProjectionLifecycle.Inline);
+
+                // Snapshot automático do aggregate (para acelerar LoadAsync)
+                options.Projections.Snapshot<UserGameLibraryAggregate>(SnapshotLifecycle.Inline);
 
                 ////options.Schema.For<GameAggregate>();
                 options.Schema.For<GameProjection>()
