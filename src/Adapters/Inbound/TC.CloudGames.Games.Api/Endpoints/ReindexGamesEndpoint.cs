@@ -20,20 +20,38 @@ public class ReindexGamesEndpoint : EndpointWithoutRequest
 
         Summary(s =>
         {
-            s.Summary = "Endpoint for reindex all game.";
-            s.Description = "This endpoint allows for the creation all games on index.";
-            s.Responses[201] = "Returned when a index is successfully created.";
-            s.Responses[400] = "Returned when a bad request occurs.";
-            s.Responses[403] = "Returned when the caller lacks the required role to access this endpoint.";
-            s.Responses[401] = "Returned when the request is made without a valid user token.";
+            s.Summary = "Reindex games from database to Elasticsearch";
+            s.Description = "This endpoint reindexes all games from the database to the Elasticsearch index for search functionality.";
+            s.Responses[200] = "Games reindexed successfully";
+            s.Responses[400] = "Bad request";
+            s.Responses[403] = "Access denied";
+            s.Responses[401] = "Unauthorized";
         });
     }
 
     public override async Task HandleAsync(CancellationToken ct)
     {
-        using var session = _store.QuerySession();
-        var games = await session.Query<GameProjection>().ToListAsync(ct);
-        await _search.BulkIndexAsync(games, ct);
-        await Send.OkAsync(new { message = "Reindex completed", count = games.Count }, cancellation: ct);
+        try
+        {
+            // Ensure index exists
+            await _search.EnsureIndexAsync(ct);
+
+            // Get all games from database
+            using var session = _store.QuerySession();
+            var games = await session.Query<GameProjection>().ToListAsync(ct);
+            
+            Console.WriteLine($"🔄 Reindexing {games.Count} games from database...");
+            
+            // Bulk index the games from database
+            await _search.BulkIndexAsync(games, ct);
+            Console.WriteLine($"✅ Games reindexed successfully");
+
+            await HttpContext.Response.WriteAsJsonAsync(new { Message = "Games reindexed successfully", Count = games.Count }, ct);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error reindexing games data");
+            await HttpContext.Response.WriteAsJsonAsync(new { Error = "Failed to reindex games data" }, ct);
+        }
     }
 }

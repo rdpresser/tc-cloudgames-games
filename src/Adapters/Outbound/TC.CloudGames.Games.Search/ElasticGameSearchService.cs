@@ -18,9 +18,16 @@ public class ElasticGameSearchService : IGameSearchService
 
     public async Task BulkIndexAsync(IEnumerable<GameProjection> games, CancellationToken ct = default)
     {
+        var gamesList = games.ToList();
+        Console.WriteLine($"📦 Bulk indexing {gamesList.Count} games to index: {_options.IndexName}");
+        
+        // Ensure index exists before bulk indexing
+        await EnsureIndexAsync(ct);
+        
         var operations = new List<IBulkOperation>();
-        foreach (var g in games)
+        foreach (var g in gamesList)
         {
+            Console.WriteLine($"📝 Adding game: {g.Name} (Genre: {g.Genre})");
             operations.Add(new BulkIndexOperation<GameProjection>(g) { Id = g.Id });
         }
 
@@ -30,7 +37,17 @@ public class ElasticGameSearchService : IGameSearchService
             Operations = operations
         };
 
-        await _client.BulkAsync(bulkReq, ct);
+        var response = await _client.BulkAsync(bulkReq, ct);
+        Console.WriteLine($"📊 Bulk response valid: {response.IsValidResponse}");
+        
+        if (!response.IsValidResponse)
+        {
+            Console.WriteLine($"❌ Bulk indexing failed: {response.DebugInformation}");
+        }
+        else
+        {
+            Console.WriteLine($"✅ Bulk indexing completed successfully");
+        }
     }
 
     public async Task DeleteAsync(string id, CancellationToken ct = default)
@@ -73,29 +90,70 @@ public class ElasticGameSearchService : IGameSearchService
 
     public async Task<IEnumerable<object>> GetPopularGamesAggregationAsync(int size = 10, CancellationToken ct = default)
     {
-        var resp = await _client.SearchAsync<GameProjection>(s => s
-            .Indices(_options.IndexName)
-            .Size(0)
-            .Aggregations(a => a
-                .Add("top_games", new TermsAggregation
-                {
-                    Field = "genre.keyword",
-                    Size = size
-                })
-            ), ct);
-
-        if (resp.Aggregations == null)
-            return Enumerable.Empty<object>();
-
-        if (!resp.Aggregations.TryGetAggregate<StringTermsAggregate>("top_games", out var termsAgg) || termsAgg == null)
-            return Enumerable.Empty<object>();
-
-        return termsAgg.Buckets.Select(b => new
+        try
         {
-            Genre = b.Key,
-            Count = b.DocCount
-        });
+            Console.WriteLine($"🔍 Searching in index: {_options.IndexName}");
+            
+            // Verificar se o índice existe
+            var indexExists = await _client.Indices.ExistsAsync(_options.IndexName, ct);
+            Console.WriteLine($"📊 Index exists: {indexExists.Exists}");
+            
+            if (!indexExists.Exists)
+            {
+                Console.WriteLine("📝 Creating index...");
+                await EnsureIndexAsync(ct);
+            }
+
+            // Verificar se há documentos no índice
+            Console.WriteLine($"📈 Checking documents in index: {_options.IndexName}");
+
+            var resp = await _client.SearchAsync<GameProjection>(s => s
+                .Indices(_options.IndexName)
+                .Size(0)
+                .Query(q => q.MatchAll())
+                .Aggregations(a => a
+                    .Add("top_games", new TermsAggregation
+                    {
+                        Field = "genre",
+                        Size = size,
+                        MinDocCount = 1
+                    })
+                ), ct);
+
+            Console.WriteLine($"🔍 Search response valid: {resp.IsValidResponse}");
+            Console.WriteLine($"🔍 Has aggregations: {resp.Aggregations != null}");
+
+            if (resp.Aggregations == null)
+            {
+                Console.WriteLine("❌ No aggregations found");
+                return Enumerable.Empty<object>();
+            }
+
+            if (!resp.Aggregations.TryGetAggregate<StringTermsAggregate>("top_games", out var termsAgg) || termsAgg == null)
+            {
+                Console.WriteLine("❌ No top_games aggregation found");
+                return Enumerable.Empty<object>();
+            }
+
+            Console.WriteLine($"🎯 Found {termsAgg.Buckets.Count} genre buckets");
+            
+            var result = termsAgg.Buckets.Select(b => new
+            {
+                Genre = b.Key,
+                Count = b.DocCount
+            }).ToList();
+
+            Console.WriteLine($"✅ Returning {result.Count} results");
+            return result;
         }
+        catch (Exception ex)
+        {
+            // Log the exception and return empty result
+            Console.WriteLine($"❌ Error in GetPopularGamesAggregationAsync: {ex.Message}");
+            Console.WriteLine($"❌ Stack trace: {ex.StackTrace}");
+            return Enumerable.Empty<object>();
+        }
+    }
 
     public async Task IndexAsync(GameProjection projection, CancellationToken ct = default)
     {

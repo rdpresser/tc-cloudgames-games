@@ -11,20 +11,25 @@ public static class ElasticClientFactory
     {
         var opts = configuration.GetSection("Elasticsearch").Get<ElasticSearchOptions>() ?? new ElasticSearchOptions();
 
-        if (string.IsNullOrWhiteSpace(opts.Url))
+        var connectionUrl = opts.GetConnectionUrl();
+        if (string.IsNullOrWhiteSpace(connectionUrl))
             throw new InvalidOperationException("Elasticsearch URL não configurada. Verifique seu .env ou appsettings.json.");
 
-        var uri = new Uri(opts.Url);
+        var uri = new Uri(connectionUrl);
 
-        var settings = new ElasticsearchClientSettings(uri);
+        var settings = new ElasticsearchClientSettings(uri)
+            .DefaultIndex(opts.IndexName)
+            .RequestTimeout(TimeSpan.FromSeconds(30))
+            .PingTimeout(TimeSpan.FromSeconds(10))
+            .DeadTimeout(TimeSpan.FromMinutes(2))
+            .MaxDeadTimeout(TimeSpan.FromMinutes(5))
+            .ThrowExceptions();
 
+        // Only add authentication if credentials are provided
         if (!string.IsNullOrWhiteSpace(opts.Username) && !string.IsNullOrWhiteSpace(opts.Password))
         {
-            settings = settings
-                .Authentication(new BasicAuthentication(opts.Username!, opts.Password!));
+            settings = settings.Authentication(new BasicAuthentication(opts.Username!, opts.Password!));
         }
-
-        settings = settings.DefaultIndex(opts.IndexName);
 
         var client = new ElasticsearchClient(settings);
         services.AddSingleton(client);
@@ -32,6 +37,5 @@ public static class ElasticClientFactory
 
         services.AddScoped<IGameSearchService, ElasticGameSearchService>();
         services.AddScoped<GamesIndexInitializer>();
-
     }
 }

@@ -29,7 +29,22 @@ public class PopularGamesEndpoint : EndpointWithoutRequest
 
     public override async Task HandleAsync(CancellationToken ct)
     {
-        var result = await _search.GetPopularGamesAggregationAsync(10, ct);
-        await HttpContext.Response.WriteAsJsonAsync(result, ct);
+        try
+        {
+            var result = await _search.GetPopularGamesAggregationAsync(10, ct);
+            
+            if (!result.Any())
+            {
+                await HttpContext.Response.WriteAsJsonAsync(new { Message = "No popular games data available" }, ct);
+                return;
+            }
+            
+            await HttpContext.Response.WriteAsJsonAsync(result, ct);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error retrieving popular games");
+            await HttpContext.Response.WriteAsJsonAsync(new { Error = "Failed to retrieve popular games" }, ct);
+        }
     }
 }
