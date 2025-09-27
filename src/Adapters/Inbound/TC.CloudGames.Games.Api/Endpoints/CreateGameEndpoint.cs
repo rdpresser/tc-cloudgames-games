@@ -1,7 +1,16 @@
-﻿namespace TC.CloudGames.Games.Api.Endpoints
+﻿using TC.CloudGames.Games.Search;
+
+namespace TC.CloudGames.Games.Api.Endpoints
 {
     public sealed class CreateGameEndpoint : BaseApiEndpoint<CreateGameCommand, CreateGameResponse>
     {
+        private readonly IGameSearchService _searchService;
+
+        public CreateGameEndpoint(IGameSearchService searchService)
+        {
+            _searchService = searchService;
+        }
+
         public override void Configure()
         {
             Post("game");
@@ -30,6 +39,9 @@
 
             if (response.IsSuccess)
             {
+                var projection = MapToProjection(response.Value);
+                await _searchService.IndexAsync(projection, ct);
+
                 string location = $"{BaseURL}api/game/";
                 object routeValues = new { id = response.Value.Id };
                 await Send.CreatedAtAsync(location, routeValues, response.Value, cancellation: ct).ConfigureAwait(false);
@@ -93,5 +105,26 @@
                 GameStatus: GameAggregate.ValidGameStatus.First()
             );
         }
+
+        private static GameProjection MapToProjection(CreateGameResponse response) => new()
+        {
+            Id = response.Id,
+            Name = response.Name,
+            Description = response.Description,
+            ReleaseDate = response.ReleaseDate,
+            AgeRating = response.AgeRating,
+            Developer = response.DeveloperInfo.Developer,
+            Publisher = response.DeveloperInfo.Publisher,
+            PriceAmount = response.Price,
+            RatingAverage = response.Rating,
+            Genre = response.GameDetails.Genre,
+            Platforms = response.GameDetails.Platforms,
+            Tags = response.GameDetails.Tags,
+            GameMode = response.GameDetails.GameMode,
+            DistributionFormat = response.GameDetails.DistributionFormat,
+            AvailableLanguages = response.GameDetails.AvailableLanguages,
+            SupportsDlcs = response.GameDetails.SupportsDlcs,
+            GameStatus = response.GameStatus
+        };
     }
 }
