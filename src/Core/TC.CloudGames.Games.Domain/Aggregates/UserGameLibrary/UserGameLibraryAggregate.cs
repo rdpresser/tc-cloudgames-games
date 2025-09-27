@@ -76,12 +76,13 @@
             UserId = @event.UserId;
             GameId = @event.GameId;
             PaymentId = @event.PaymentId;
-            PurchaseDate = @event.PurchaseDate;
             GameName = @event.GameName;
             Amount = @event.Amount;
             IsApproved = false;
+            PurchaseDate = @event.PurchaseDate;
             ErrorMessage = null;
             SetCreatedAt(@event.OccurredOn);
+            SetUpdatedAt(null);
         }
 
         public void Apply(UserGameLibraryGamePaymentStatusUpdateDomainEvent @event)
@@ -105,6 +106,9 @@
 
         #region Domain Events
 
+        /// <summary>
+        /// Event triggered when the payment status of a game in the user's library is updated.
+        /// </summary>
         public record UserGameLibraryGamePaymentStatusUpdateDomainEvent(
             Guid AggregateId,
             Guid UserId,

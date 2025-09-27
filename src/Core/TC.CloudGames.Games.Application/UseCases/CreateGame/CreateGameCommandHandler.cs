@@ -83,7 +83,7 @@
             if (!mapResult.IsSuccess)
             {
                 AddErrors(mapResult.ValidationErrors);
-                return Result<CreateGameResponse>.Invalid(mapResult.ValidationErrors);
+                return BuildValidationErrorResult();
             }
 
             var aggregate = mapResult.Value;
@@ -93,7 +93,7 @@
             if (!validationResult.IsSuccess)
             {
                 AddErrors(validationResult.ValidationErrors);
-                return Result<CreateGameResponse>.Invalid(validationResult.ValidationErrors);
+                return BuildValidationErrorResult();
             }
 
             // 3. Persist aggregate events (event sourcing)

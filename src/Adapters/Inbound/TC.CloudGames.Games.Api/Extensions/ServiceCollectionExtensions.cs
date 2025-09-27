@@ -405,10 +405,7 @@
                 options.Projections.Add<GameProjectionHandler>(ProjectionLifecycle.Inline);
                 options.Projections.Add<UserGameLibraryProjectionHandler>(ProjectionLifecycle.Inline);
 
-                ////options.Projections.Snapshot<GameAggregate>(SnapshotLifecycle.Inline);
-                // Snapshot automático do aggregate (para acelerar LoadAsync)
-                options.Schema.For<GameAggregate>();
-
+                ////options.Schema.For<GameAggregate>();
                 options.Schema.For<GameProjection>()
                     .DatabaseSchemaName("documents")
                     // Campos duplicados para filtros e ordenação
@@ -423,13 +420,16 @@
 
                 // Computed indexes (case-insensitive)
                 options.Schema.For<GameProjection>()
+                    .DatabaseSchemaName("documents")
                     .Index(x => x.Name, x => { x.Casing = ComputedIndex.Casings.Lower; x.Method = IndexMethod.btree; x.Name = "idx_gameprojection_name_lower"; })
                     .Index(x => x.Developer, x => { x.Casing = ComputedIndex.Casings.Lower; x.Method = IndexMethod.btree; x.Name = "idx_gameprojection_developer_lower"; })
                     .Index(x => x.Genre, x => { x.Casing = ComputedIndex.Casings.Lower; x.Method = IndexMethod.btree; x.Name = "idx_gameprojection_genre_lower"; })
                     .Index(x => x.GameMode, x => { x.Casing = ComputedIndex.Casings.Lower; x.Method = IndexMethod.btree; x.Name = "idx_gameprojection_gamemode_lower"; });
 
                 // GIN index on JSONB
-                options.Schema.For<GameProjection>().GinIndexJsonData();
+                options.Schema.For<GameProjection>()
+                    .DatabaseSchemaName("documents")
+                    .GinIndexJsonData();
 
                 options.Schema.For<UserGameLibraryProjection>()
                     .DatabaseSchemaName("documents")
@@ -442,10 +442,13 @@
                     .Duplicate(x => x.IsActive, pgType: "boolean");
 
                 options.Schema.For<UserGameLibraryProjection>()
+                    .DatabaseSchemaName("documents")
                     .Index(x => x.GameName, x => { x.Casing = ComputedIndex.Casings.Lower; x.Method = IndexMethod.btree; x.Name = "idx_usergamelibrary_game_name_lower"; });
 
                 // GIN index on JSONB
-                options.Schema.For<UserGameLibraryProjection>().GinIndexJsonData();
+                options.Schema.For<UserGameLibraryProjection>()
+                    .DatabaseSchemaName("documents")
+                    .GinIndexJsonData();
 
                 options.CreateDatabasesForTenants(c =>
                 {

@@ -29,9 +29,10 @@ namespace TC.CloudGames.Games.Infrastructure.Projections
 
             projection.Id = @event.AggregateId;
             projection.UserId = @event.UserId;
-
-            // TODO: Consider if we need to update GameId, PaymentId, GameName, Amount, PurchaseDate on payment status update
-
+            projection.GameId = @event.GameId;
+            projection.PaymentId = @event.PaymentId;
+            projection.IsApproved = @event.IsApproved;
+            projection.ErrorMessage = @event.ErrorMessage;
             projection.UpdatedAt = @event.OccurredOn;
             operations.Store(projection);
         }
