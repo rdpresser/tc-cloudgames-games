@@ -148,7 +148,14 @@ jobs:
       azure-environment: ${{ steps.outputs.outputs.azure-environment }}
       azure-subscription-id: ${{ steps.outputs.outputs.azure-subscription-id }}
     steps:
-      - name: 🔐 Azure Login
+      - name: � Debug Environment Info
+        run: |
+          echo "Event name: ${{ github.event_name }}"
+          echo "Environment input: ${{ github.event.inputs.environment }}"
+          echo "Final environment: ${{ github.event.inputs.environment || 'dev-rodrigo' }}"
+          echo "Has AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS != '' }}"
+
+      - name: �🔐 Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
