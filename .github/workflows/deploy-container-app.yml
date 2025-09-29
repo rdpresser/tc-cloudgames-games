@@ -235,7 +235,7 @@ jobs:
             --secrets \
               "db-host=keyvaultref:https://$KEY_VAULT_NAME.vault.azure.net/secrets/db-host,identityref:system" \
               "db-port=keyvaultref:https://$KEY_VAULT_NAME.vault.azure.net/secrets/db-port,identityref:system" \
-              "db-name-users=keyvaultref:https://$KEY_VAULT_NAME.vault.azure.net/secrets/db-name-users,identityref:system" \
+              "db-name-games=keyvaultref:https://$KEY_VAULT_NAME.vault.azure.net/secrets/db-name-games,identityref:system" \
               "db-admin-login=keyvaultref:https://$KEY_VAULT_NAME.vault.azure.net/secrets/db-admin-login,identityref:system" \
               "db-password=keyvaultref:https://$KEY_VAULT_NAME.vault.azure.net/secrets/db-password,identityref:system" \
               "db-name-maintenance=keyvaultref:https://$KEY_VAULT_NAME.vault.azure.net/secrets/db-name-maintenance,identityref:system" \
@@ -249,7 +249,7 @@ jobs:
               "cache-port=keyvaultref:https://$KEY_VAULT_NAME.vault.azure.net/secrets/cache-port,identityref:system" \
               "cache-password=keyvaultref:https://$KEY_VAULT_NAME.vault.azure.net/secrets/cache-password,identityref:system" \
               "cache-secure=keyvaultref:https://$KEY_VAULT_NAME.vault.azure.net/secrets/cache-secure,identityref:system" \
-              "cache-users-instance-name=keyvaultref:https://$KEY_VAULT_NAME.vault.azure.net/secrets/cache-users-instance-name,identityref:system"
+              "cache-games-instance-name=keyvaultref:https://$KEY_VAULT_NAME.vault.azure.net/secrets/cache-games-instance-name,identityref:system"
           
           # Service Bus secrets
           az containerapp secret set --name "$CONTAINER_APP_NAME" --resource-group "$RESOURCE_GROUP" \
@@ -260,7 +260,7 @@ jobs:
               "servicebus-enable-dead-lettering=keyvaultref:https://$KEY_VAULT_NAME.vault.azure.net/secrets/servicebus-enable-dead-lettering,identityref:system" \
               "servicebus-auto-purge-on-startup=keyvaultref:https://$KEY_VAULT_NAME.vault.azure.net/secrets/servicebus-auto-purge-on-startup,identityref:system" \
               "servicebus-use-control-queues=keyvaultref:https://$KEY_VAULT_NAME.vault.azure.net/secrets/servicebus-use-control-queues,identityref:system" \
-              "servicebus-users-topic-name=keyvaultref:https://$KEY_VAULT_NAME.vault.azure.net/secrets/servicebus-users-topic-name,identityref:system"
+              "servicebus-games-topic-name=keyvaultref:https://$KEY_VAULT_NAME.vault.azure.net/secrets/servicebus-games-topic-name,identityref:system"
           
           echo "✅ Container App secrets setup completed!"
         shell: bash
@@ -289,7 +289,7 @@ jobs:
               ASPNETCORE_URLS=http://+:8080 \
               DB_HOST=secretref:db-host \
               DB_PORT=secretref:db-port \
-              DB_NAME=secretref:db-name-users \
+              DB_NAME=secretref:db-name-games \
               DB_USER=secretref:db-admin-login \
               DB_PASSWORD=secretref:db-password \
               DB_MAINTENANCE_NAME=secretref:db-name-maintenance \
@@ -305,9 +305,9 @@ jobs:
               AZURE_SERVICEBUS_ENABLE_DEAD_LETTERING=secretref:servicebus-enable-dead-lettering \
               AZURE_SERVICEBUS_AUTO_PURGE_ON_STARTUP=secretref:servicebus-auto-purge-on-startup \
               AZURE_SERVICEBUS_USE_CONTROL_QUEUES=secretref:servicebus-use-control-queues \
-              AZURE_SERVICEBUS_TOPIC_NAME=secretref:servicebus-users-topic-name \
-              CACHE_INSTANCE_NAME=secretref:cache-users-instance-name
-          
+              AZURE_SERVICEBUS_TOPIC_NAME=secretref:servicebus-games-topic-name \
+              CACHE_INSTANCE_NAME=secretref:cache-games-instance-name
+
           echo "✅ Container App deployment completed successfully!"
           echo "🔍 Checking deployment status..."
           

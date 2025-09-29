@@ -1,11 +1,11 @@
-name: 🚀 Users API CI/CD Pipeline
+name: 🚀 Games API CI/CD Pipeline
 
 on:
   pull_request:
     branches: [main]
     types: [closed]
     paths:
-      - 'services/users/**'
+      - 'services/games/**'
       - '.github/workflows/**'
       - 'azd/**'
   workflow_dispatch:
@@ -18,12 +18,12 @@ on:
           - dev-rodrigo
 
 env:
-  SERVICE_NAME: users-api
-  SOLUTION_PATH: services/users/TC.CloudGames.Users.sln
-  SOLUTION_FILE: TC.CloudGames.Users.sln
-  SERVICE_PATH: services/users
-  DOCKERFILE_PATH: services/users/src/Adapters/Inbound/TC.CloudGames.Users.Api/Dockerfile
-  WORKSPACE_PATH: tc-cloudgames-solution/services/users
+  SERVICE_NAME: games-api
+  SOLUTION_PATH: services/games/TC.CloudGames.Games.sln
+  SOLUTION_FILE: TC.CloudGames.Games.sln
+  SERVICE_PATH: services/games
+  DOCKERFILE_PATH: services/games/src/Adapters/Inbound/TC.CloudGames.Games.Api/Dockerfile
+  WORKSPACE_PATH: tc-cloudgames-solution/services/games
 
 jobs:
   check-trigger:
@@ -166,9 +166,9 @@ jobs:
     needs: [unit-tests, get-foundation-outputs]
     if: needs.check-trigger.outputs.should-deploy == 'true'
     with:
-      service-name: users-api
-      workspace-path: tc-cloudgames-solution/services/users
-      dockerfile-path: services/users/src/Adapters/Inbound/TC.CloudGames.Users.Api/Dockerfile
+      service-name: games-api
+      workspace-path: tc-cloudgames-solution/services/games
+      dockerfile-path: services/games/src/Adapters/Inbound/TC.CloudGames.Games.Api/Dockerfile
       environment: ${{ github.event.inputs.environment || 'dev-rodrigo' }}
       acr-name: ${{ needs.get-foundation-outputs.outputs.acr-name }}
       key-vault-name: ${{ needs.get-foundation-outputs.outputs.key-vault-name }}
