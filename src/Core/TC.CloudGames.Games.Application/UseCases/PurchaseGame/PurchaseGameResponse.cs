@@ -8,5 +8,6 @@
         Guid GameId,
         Guid PaymentId,
         decimal Amount,
+        bool IsApproved,
         DateTime PurchaseDate);
 }

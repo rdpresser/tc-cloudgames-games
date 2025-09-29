@@ -46,11 +46,12 @@ namespace TC.CloudGames.Games.Api.Endpoints
         public static PurchaseGameResponse PurchaseGameResponseExample()
         {
             return new PurchaseGameResponse(
-                PaymentId: Guid.NewGuid(),
-                GameId: Guid.NewGuid(),
                 UserId: Guid.NewGuid(),
-                PurchaseDate: DateTime.UtcNow,
-                Amount: 59.99m);
+                GameId: Guid.NewGuid(),
+                PaymentId: Guid.NewGuid(),
+                Amount: 59.99m,
+                IsApproved: false,
+                PurchaseDate: DateTime.UtcNow);
         }
     }
 }

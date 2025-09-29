@@ -27,11 +27,12 @@
 
         public static PurchaseGameResponse FromAggregate(UserGameLibraryAggregate aggregate)
         => new(
-                aggregate.UserId,
-                aggregate.GameId,
-                aggregate.PaymentId,
-                aggregate.Amount,
-                aggregate.PurchaseDate.UtcDateTime
+                UserId: aggregate.UserId,
+                GameId: aggregate.GameId,
+                PaymentId: aggregate.PaymentId,
+                Amount: aggregate.Amount,
+                IsApproved: aggregate.IsApproved,
+                PurchaseDate: aggregate.PurchaseDate.UtcDateTime
             );
 
 
