@@ -20,12 +20,8 @@ builder.Services.AddElasticSearch(builder.Configuration);
 
 var app = builder.Build();
 
-// ElasticSearch index initialization
-using (var scope = app.Services.CreateScope())
-{
-    var initializer = scope.ServiceProvider.GetRequiredService<GamesIndexInitializer>();
-    await initializer.InitializeAsync();
-}
+// Note: In Elasticsearch Cloud Serverless, indices are created automatically on first document insertion
+// No manual index initialization is required
 
 if (!builder.Environment.IsEnvironment("Testing"))
 {

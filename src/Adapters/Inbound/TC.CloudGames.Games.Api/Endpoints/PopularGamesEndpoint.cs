@@ -2,6 +2,10 @@
 
 namespace TC.CloudGames.Games.Api.Endpoints;
 
+/// <summary>
+/// Endpoint for retrieving popular games aggregation data by genre.
+/// Provides analytics about game distribution across different genres.
+/// </summary>
 public class PopularGamesEndpoint : EndpointWithoutRequest
 {
     private readonly IGameSearchService _search;
@@ -14,16 +18,15 @@ public class PopularGamesEndpoint : EndpointWithoutRequest
     public override void Configure()
     {
         Get("game/popular");
-        Roles(AppConstants.AdminRole);
+        AllowAnonymous(); // Allow public access to popular games data
 
         Summary(s =>
         {
-            s.Summary = "Endpoint for index a new game.";
-            s.Description = "This endpoint return popular games.";
-            s.Responses[200] = "Returned when the popular game list is successfully.";
-            s.Responses[400] = "Returned when a bad request occurs.";
-            s.Responses[403] = "Returned when the caller lacks the required role to access this endpoint.";
-            s.Responses[401] = "Returned when the request is made without a valid user token.";
+            s.Summary = "Get popular games aggregation by genre";
+            s.Description = "This endpoint returns aggregated data showing the most popular game genres with their respective game counts.";
+            s.Responses[200] = "Popular games data returned successfully";
+            s.Responses[404] = "No popular games data available";
+            s.Responses[500] = "Internal server error";
         });
     }
 
@@ -31,20 +34,47 @@ public class PopularGamesEndpoint : EndpointWithoutRequest
     {
         try
         {
-            var result = await _search.GetPopularGamesAggregationAsync(10, ct);
+            const int size = 10; // Fixed size for popular games
             
-            if (!result.Any())
+            Logger.LogInformation("📊 Retrieving popular games aggregation (size: {Size})", size);
+
+            // Get aggregation data
+            var result = await _search.GetPopularGamesAggregationAsync(size, ct);
+            var genres = result.ToList();
+            
+            if (!genres.Any())
             {
+                Logger.LogInformation("📭 No popular games data available");
+                HttpContext.Response.StatusCode = 404;
                 await HttpContext.Response.WriteAsJsonAsync(new { Message = "No popular games data available" }, ct);
                 return;
             }
-            
-            await HttpContext.Response.WriteAsJsonAsync(result, ct);
+
+            Logger.LogInformation("✅ Retrieved {GenreCount} popular genres", genres.Count);
+
+            // Return structured response
+            var response = new
+            {
+                TotalGenres = genres.Count,
+                TotalGames = genres.Sum(g => g.Count),
+                Genres = genres.Select(g => new
+                {
+                    Genre = g.Genre,
+                    GameCount = g.Count,
+                    Percentage = genres.Sum(x => x.Count) > 0 
+                        ? Math.Round((double)g.Count / genres.Sum(x => x.Count) * 100, 2) 
+                        : 0
+                }).ToList(),
+                Timestamp = DateTimeOffset.UtcNow
+            };
+
+            await HttpContext.Response.WriteAsJsonAsync(response, ct);
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error retrieving popular games");
-            await HttpContext.Response.WriteAsJsonAsync(new { Error = "Failed to retrieve popular games" }, ct);
+            Logger.LogError(ex, "❌ Error retrieving popular games: {ErrorMessage}", ex.Message);
+            HttpContext.Response.StatusCode = 500;
+            await HttpContext.Response.WriteAsJsonAsync(new { Error = "Internal server error" }, ct);
         }
     }
 }

@@ -1,16 +1,21 @@
 ﻿using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Aggregations;
 using Elastic.Clients.Elasticsearch.Core.Bulk;
+using Elastic.Clients.Elasticsearch.QueryDsl;
 using Microsoft.Extensions.Logging;
 using TC.CloudGames.Games.Infrastructure.Projections;
 
 namespace TC.CloudGames.Games.Search;
 
+/// <summary>
+/// Elasticsearch implementation of game search service.
+/// Optimized for Elasticsearch Cloud Serverless with automatic index management.
+/// </summary>
 public class ElasticGameSearchService : IGameSearchService
 {
     private readonly ElasticsearchClient _client;
     private readonly ElasticSearchOptions _options;
-    private readonly ILogger<ElasticGameSearchService> _logger; 
+    private readonly ILogger<ElasticGameSearchService> _logger;
 
     public ElasticGameSearchService(
         ElasticsearchClient client,
@@ -22,235 +27,363 @@ public class ElasticGameSearchService : IGameSearchService
         _logger = logger;
     }
 
-    public async Task BulkIndexAsync(IEnumerable<GameProjection> games, CancellationToken ct = default)
-    {
-        var gamesList = games.ToList();
-        _logger.LogInformation("📦 Bulk indexing {GameCount} games to index: {IndexName}",gamesList.Count, _options.IndexName);
-
-        // Ensure index exists before bulk indexing
-        await EnsureIndexAsync(ct);
-        
-        var operations = new List<IBulkOperation>();
-        foreach (var g in gamesList)
-        {
-            _logger.LogDebug("📝 Adding game: {GameName} (Genre: {Genre})", g.Name, g.Genre);
-            operations.Add(new BulkIndexOperation<GameProjection>(g) { Id = g.Id });
-        }
-
-        var bulkReq = new BulkRequest
-        {
-            Index = _options.IndexName,
-            Operations = operations
-        };
-
-        var response = await _client.BulkAsync(bulkReq, ct);
-        _logger.LogInformation("📊 Bulk response valid: {IsValidResponse}", response.IsValidResponse);
-
-        if (!response.IsValidResponse)
-        {
-            _logger.LogError("❌ Bulk indexing failed: {DebugInformation}", response.DebugInformation);
-        }
-        else
-        {
-            _logger.LogInformation("✅ Bulk indexing completed successfully for {GameCount} games", gamesList.Count);
-        }
-    }
-
-    public async Task DeleteAsync(string id, CancellationToken ct = default)
-    {
-        _logger.LogInformation("🗑️ Deleting game with ID: {GameId} from index: {IndexName}", id, _options.IndexName);
-
-        var request = new DeleteRequest(_options.IndexName, id);
-        var response = await _client.DeleteAsync(request, ct);
-
-        if (response.IsValidResponse)
-        {
-            _logger.LogInformation("✅ Game {GameId} deleted successfully", id);
-        }
-        else
-        {
-            _logger.LogWarning("⚠️ Game {GameId} deletion response: {DebugInformation}", id, response.DebugInformation);
-        }
-    }
-
-    public async Task EnsureIndexAsync(CancellationToken ct = default)
-    {
-        var exists = await _client.Indices.ExistsAsync(_options.IndexName, ct);
-        if (exists.Exists)
-        {
-            _logger.LogDebug("📊 Index {IndexName} already exists", _options.IndexName);
-            return;
-        }
-
-        _logger.LogInformation("📝 Creating index: {IndexName}", _options.IndexName);
-
-        await _client.Indices.CreateAsync(_options.IndexName, c => c
-            .Settings(s => s
-                .Analysis(a => a
-                    .Analyzers(an => an
-                        .Custom("autocomplete_analyzer", ca => ca
-                            .Tokenizer("standard")
-                            .Filter("lowercase", "asciifolding")
-                        )
-                    )
-                )
-            )
-            .Mappings(m => m
-                .Properties<GameProjection>(p => p
-                    .Text("name")
-                    .Text("description")
-                    .Keyword("genre")
-                    .Keyword("platforms")
-                    .IntegerNumber("playerCount")
-                    .Date("releaseDate")
-                    .Boolean("isActive")
-                )
-            )
-        , ct);
-
-        await _client.Indices.PutAliasAsync(_options.IndexName, "games", ct);
-
-        _logger.LogInformation("✅ Index {IndexName} created successfully with alias 'games'", _options.IndexName);
-    }
-
-    public async Task<IEnumerable<object>> GetPopularGamesAggregationAsync(int size = 10, CancellationToken ct = default)
-    {
-        try
-        {
-
-            _logger.LogInformation("🔍 Searching popular games aggregation in index: {IndexName} with size: {Size}", _options.IndexName, size);
-
-            // Verificar se o índice existe
-            var indexExists = await _client.Indices.ExistsAsync(_options.IndexName, ct);
-
-            _logger.LogDebug("📊 Index exists: {IndexExists}", indexExists.Exists);
-
-            if (!indexExists.Exists)
-            {
-                _logger.LogInformation("📝 Creating index for aggregation search...");
-                await EnsureIndexAsync(ct);
-            }
-
-            // Verificar se há documentos no índice
-            _logger.LogDebug("📈 Checking documents in index: {IndexName}", _options.IndexName);
-
-            var resp = await _client.SearchAsync<GameProjection>(s => s
-                .Indices(_options.IndexName)
-                .Size(0)
-                .Query(q => q.MatchAll())
-                .Aggregations(a => a
-                    .Add("top_games", new TermsAggregation
-                    {
-                        Field = "genre",
-                        Size = size,
-                        MinDocCount = 1
-                    })
-                ), ct);
-
-            _logger.LogDebug("🔍 Search response valid: {IsValidResponse}", resp.IsValidResponse);
-            _logger.LogDebug("🔍 Has aggregations: {HasAggregations}", resp.Aggregations != null);
-
-            if (resp.Aggregations == null)
-            {
-                _logger.LogWarning("❌ No aggregations found in search response");
-                return Enumerable.Empty<object>();
-            }
-
-            if (!resp.Aggregations.TryGetAggregate<StringTermsAggregate>("top_games", out var termsAgg) || termsAgg == null)
-            {
-                _logger.LogWarning("❌ No top_games aggregation found in response");
-                return Enumerable.Empty<object>();
-            }
-
-            _logger.LogInformation("🎯 Found {BucketCount} genre buckets", termsAgg.Buckets.Count);
-
-
-            var result = termsAgg.Buckets.Select(b => new
-            {
-                Genre = b.Key,
-                Count = b.DocCount
-            }).ToList();
-
-            _logger.LogInformation("✅ Returning {ResultCount} popular games aggregation results", result.Count);
-            return result;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "❌ Error in GetPopularGamesAggregationAsync: {ErrorMessage}", ex.Message);
-            return Enumerable.Empty<object>();
-        }
-    }
-
+    /// <inheritdoc/>
     public async Task IndexAsync(GameProjection projection, CancellationToken ct = default)
     {
         if (projection == null) throw new ArgumentNullException(nameof(projection));
 
         _logger.LogInformation("📝 Indexing game: {GameName} (ID: {GameId})", projection.Name, projection.Id);
 
-        var response = await _client.IndexAsync(projection, i => i
-            .Index(_options.IndexName)
-            .Id(projection.Id), ct);
+        try
+        {
+            var response = await _client.IndexAsync(projection, i => i
+                .Index(_options.IndexName)
+                .Id(projection.Id), ct);
 
-        if (response.IsValidResponse)
-        {
-            _logger.LogInformation("✅ Game {GameName} indexed successfully", projection.Name);
+            if (response.IsValidResponse)
+            {
+                _logger.LogInformation("✅ Game {GameName} indexed successfully", projection.Name);
+            }
+            else
+            {
+                _logger.LogError("❌ Failed to index game {GameName}: {DebugInformation}",
+                    projection.Name, response.DebugInformation);
+                throw new InvalidOperationException($"Failed to index game: {response.DebugInformation}");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            _logger.LogError("❌ Failed to index game {GameName}: {DebugInformation}",
-                projection.Name, response.DebugInformation);
+            _logger.LogError(ex, "❌ Error indexing game {GameName}: {ErrorMessage}", projection.Name, ex.Message);
+            throw new InvalidOperationException($"Error indexing game {projection.Name}", ex);
         }
     }
 
-    public async Task<SimpleSearchResult<GameProjection>> SearchAsync(string query, int size = 20, CancellationToken ct = default)
+    /// <inheritdoc/>
+    public async Task BulkIndexAsync(IEnumerable<GameProjection> games, CancellationToken ct = default)
     {
-        _logger.LogInformation("🔍 Searching games with query: '{Query}' (size: {Size})", query, size);
-
-        var resp = await _client.SearchAsync<GameProjection>(s => s
-            .Indices(_options.IndexName)
-            .Size(size)
-            .Query(q => q
-                .MultiMatch(m => m
-                    .Fields(new[] { "name", "description" })
-                    .Query(query)
-                    .Fuzziness(new Fuzziness("AUTO"))
-                )
-            ), ct);
-
-        var hits = resp.Hits?.Select(h => h.Source!).Where(x => x != null).ToArray()
-                   ?? Array.Empty<GameProjection>();
-
-        long total = resp.Total != 0 ? resp.Total : hits.LongLength;
-
-        _logger.LogInformation("🔍 Search completed: {HitCount} hits found (total: {Total})", hits.Length, total);
-
-        if (!resp.IsValidResponse)
+        var gamesList = games.ToList();
+        if (!gamesList.Any())
         {
-            _logger.LogWarning("⚠️ Search response not valid: {DebugInformation}", resp.DebugInformation);
+            _logger.LogInformation("📦 No games to index in bulk operation");
+            return;
         }
 
-        return new SimpleSearchResult<GameProjection>(hits, total);
+        _logger.LogInformation("📦 Bulk indexing {GameCount} games to index: {IndexName}", gamesList.Count, _options.IndexName);
+
+        try
+        {
+            var operations = new List<IBulkOperation>();
+            foreach (var game in gamesList)
+            {
+                _logger.LogDebug("📝 Adding game to bulk: {GameName} (Genre: {Genre})", game.Name, game.Genre);
+                operations.Add(new BulkIndexOperation<GameProjection>(game) { Id = game.Id });
+            }
+
+            var bulkRequest = new BulkRequest
+            {
+                Index = _options.IndexName,
+                Operations = operations
+            };
+
+            var response = await _client.BulkAsync(bulkRequest, ct);
+
+            if (response.IsValidResponse)
+            {
+                _logger.LogInformation("✅ Bulk indexing completed successfully for {GameCount} games", gamesList.Count);
+                
+                if (response.Errors)
+                {
+                    var errorCount = response.Items.Count(i => i.Error != null);
+                    _logger.LogWarning("⚠️ Bulk operation had {ErrorCount} errors out of {TotalCount} items", errorCount, gamesList.Count);
+                }
+            }
+            else
+            {
+                _logger.LogError("❌ Bulk indexing failed: {DebugInformation}", response.DebugInformation);
+                throw new InvalidOperationException($"Bulk indexing failed: {response.DebugInformation}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error in bulk indexing: {ErrorMessage}", ex.Message);
+            throw new InvalidOperationException("Error in bulk indexing operation", ex);
+        }
     }
 
+    /// <inheritdoc/>
     public async Task UpdateAsync(Guid id, object patch, CancellationToken ct = default)
     {
         _logger.LogInformation("🔄 Updating game with ID: {GameId}", id);
 
-        var response = await _client.UpdateAsync<GameProjection, object>(
-            _options.IndexName,
-            id,
-            u => u.Doc(patch),
-            ct
-        );
-
-        if (response.IsValidResponse)
+        try
         {
-            _logger.LogInformation("✅ Game {GameId} updated successfully", id);
+            var response = await _client.UpdateAsync<GameProjection, object>(
+                _options.IndexName,
+                id,
+                u => u.Doc(patch),
+                ct);
+
+            if (response.IsValidResponse)
+            {
+                _logger.LogInformation("✅ Game {GameId} updated successfully", id);
+            }
+            else
+            {
+                _logger.LogError("❌ Failed to update game {GameId}: {DebugInformation}",
+                    id, response.DebugInformation);
+                throw new InvalidOperationException($"Failed to update game: {response.DebugInformation}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error updating game {GameId}: {ErrorMessage}", id, ex.Message);
+            throw new InvalidOperationException($"Error updating game {id}", ex);
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task DeleteAsync(string id, CancellationToken ct = default)
+    {
+        _logger.LogInformation("🗑️ Deleting game with ID: {GameId} from index: {IndexName}", id, _options.IndexName);
+
+        try
+        {
+            var request = new DeleteRequest(_options.IndexName, id);
+            var response = await _client.DeleteAsync(request, ct);
+
+            if (response.IsValidResponse)
+            {
+                _logger.LogInformation("✅ Game {GameId} deleted successfully", id);
+            }
+            else
+            {
+                _logger.LogWarning("⚠️ Game {GameId} deletion response: {DebugInformation}", id, response.DebugInformation);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error deleting game {GameId}: {ErrorMessage}", id, ex.Message);
+            throw new InvalidOperationException($"Error deleting game {id}", ex);
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<SimpleSearchResult<GameProjection>> SearchAsync(string query, int size = 20, CancellationToken ct = default)
+    {
+        _logger.LogInformation("🔍 Searching games with query: '{Query}' (size: {Size})", query, size);
+
+        var searchRequest = new GameSearchRequest
+        {
+            Query = query,
+            Size = Math.Min(size, _options.MaxSearchSize)
+        };
+
+        return await SearchAdvancedAsync(searchRequest, ct);
+    }
+
+    /// <inheritdoc/>
+    public async Task<SimpleSearchResult<GameProjection>> SearchAdvancedAsync(GameSearchRequest searchRequest, CancellationToken ct = default)
+    {
+        _logger.LogInformation("🔍 Advanced search with query: '{Query}' (size: {Size})", searchRequest.Query, searchRequest.Size);
+
+        try
+        {
+            var response = await _client.SearchAsync<GameProjection>(s => s
+                .Indices(_options.IndexName)
+                .Size(Math.Min(searchRequest.Size, _options.MaxSearchSize))
+                .From(searchRequest.From)
+                .Query(BuildSearchQuery(searchRequest))
+                .Sort(BuildSortOptions(searchRequest)), ct);
+
+            var hits = response.Hits?.Select(h => h.Source!).Where(x => x != null).ToArray()
+                       ?? Array.Empty<GameProjection>();
+
+            long total = response.Total;
+
+            _logger.LogInformation("🔍 Search completed: {HitCount} hits found (total: {Total})", hits.Length, total);
+
+            if (!response.IsValidResponse)
+            {
+                _logger.LogWarning("⚠️ Search response not valid: {DebugInformation}", response.DebugInformation);
+            }
+
+            return new SimpleSearchResult<GameProjection>(hits, total);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error in advanced search: {ErrorMessage}", ex.Message);
+            throw new InvalidOperationException("Error in advanced search operation", ex);
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<IEnumerable<PopularGenreResult>> GetPopularGamesAggregationAsync(int size = 10, CancellationToken ct = default)
+    {
+        _logger.LogInformation("🔍 Getting popular games aggregation with size: {Size}", size);
+
+        try
+        {
+            var response = await _client.SearchAsync<GameProjection>(s => s
+                .Indices(_options.IndexName)
+                .Size(0) // We only want aggregations, no documents
+                .Query(q => q.Bool(b => b.Filter(f => f.Term(t => t.Field("isActive").Value(true)))))
+                .Aggregations(a => a
+                    .Add("popular_genres", new TermsAggregation
+                    {
+                        Field = "genre.keyword", // Use keyword field for exact matches
+                        Size = size,
+                        MinDocCount = 1
+                    })), ct);
+
+            if (!response.IsValidResponse)
+            {
+                _logger.LogWarning("❌ Aggregation search failed: {DebugInformation}", response.DebugInformation);
+                return Enumerable.Empty<PopularGenreResult>();
+            }
+
+            if (response.Aggregations == null)
+            {
+                _logger.LogWarning("❌ No aggregations found in search response");
+                return Enumerable.Empty<PopularGenreResult>();
+            }
+
+            if (!response.Aggregations.TryGetAggregate<StringTermsAggregate>("popular_genres", out var termsAgg) || termsAgg == null)
+            {
+                _logger.LogWarning("❌ No popular_genres aggregation found in response");
+                return Enumerable.Empty<PopularGenreResult>();
+            }
+
+            _logger.LogInformation("🎯 Found {BucketCount} genre buckets", termsAgg.Buckets.Count);
+
+            var results = termsAgg.Buckets
+                .Where(b => !string.IsNullOrEmpty(b.Key.ToString()))
+                .Select(b => new PopularGenreResult(b.Key.ToString()!, b.DocCount))
+                .ToList();
+
+            _logger.LogInformation("✅ Returning {ResultCount} popular genre results", results.Count);
+            return results;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error in GetPopularGamesAggregationAsync: {ErrorMessage}", ex.Message);
+            throw new InvalidOperationException("Error in aggregation operation", ex);
+        }
+    }
+
+    /// <summary>
+    /// Builds the search query based on the search request parameters.
+    /// </summary>
+    private static Query BuildSearchQuery(GameSearchRequest request)
+    {
+        var queries = new List<Query>();
+
+        // Base active filter
+        queries.Add(new TermQuery { Field = "isActive", Value = true });
+
+        // Text search
+        if (!string.IsNullOrWhiteSpace(request.Query))
+        {
+            queries.Add(new MultiMatchQuery
+            {
+                Fields = new[] { "name^3", "description^2", "genre", "developer", "tags" },
+                Query = request.Query,
+                Fuzziness = new Fuzziness("AUTO"),
+                Operator = Operator.Or
+            });
+        }
+
+        // Genre filters
+        if (request.Genres?.Any() == true)
+        {
+            queries.Add(new TermsQuery
+            {
+                Field = "genre.keyword",
+                Terms = request.Genres.Select(g => (FieldValue)g).ToArray()
+            });
+        }
+
+        // Platform filters
+        if (request.Platforms?.Any() == true)
+        {
+            queries.Add(new TermsQuery
+            {
+                Field = "platforms.keyword",
+                Terms = request.Platforms.Select(p => (FieldValue)p).ToArray()
+            });
+        }
+
+        // Price range filters
+        if (request.MinPrice.HasValue || request.MaxPrice.HasValue)
+        {
+            var rangeQuery = new NumberRangeQuery { Field = "priceAmount" };
+            if (request.MinPrice.HasValue)
+                rangeQuery.Gte = (double)request.MinPrice.Value;
+            if (request.MaxPrice.HasValue)
+                rangeQuery.Lte = (double)request.MaxPrice.Value;
+            queries.Add(rangeQuery);
+        }
+
+        // Rating filter
+        if (request.MinRating.HasValue)
+        {
+            queries.Add(new NumberRangeQuery { Field = "ratingAverage", Gte = (double)request.MinRating.Value });
+        }
+
+        // Release date range filters
+        if (request.ReleaseDateFrom.HasValue || request.ReleaseDateTo.HasValue)
+        {
+            var rangeQuery = new DateRangeQuery { Field = "releaseDate" };
+            if (request.ReleaseDateFrom.HasValue)
+                rangeQuery.Gte = DateMath.Anchored(request.ReleaseDateFrom.Value.ToDateTime(TimeOnly.MinValue));
+            if (request.ReleaseDateTo.HasValue)
+                rangeQuery.Lte = DateMath.Anchored(request.ReleaseDateTo.Value.ToDateTime(TimeOnly.MaxValue));
+            queries.Add(rangeQuery);
+        }
+
+        return new BoolQuery { Must = queries.ToArray() };
+    }
+
+    /// <summary>
+    /// Builds sort options based on the search request.
+    /// </summary>
+    private static ICollection<SortOptions> BuildSortOptions(GameSearchRequest request)
+    {
+        var sorts = new List<SortOptions>();
+
+        if (!string.IsNullOrWhiteSpace(request.SortBy))
+        {
+            var sortOrder = request.SortDirection.ToLowerInvariant() == "asc" 
+                ? SortOrder.Asc 
+                : SortOrder.Desc;
+
+            var sortField = request.SortBy.ToLowerInvariant() switch
+            {
+                "name" => "name.keyword",
+                "releasedate" => "releaseDate",
+                "price" => "priceAmount",
+                "rating" => "ratingAverage",
+                "createdat" => "createdAt",
+                _ => "_score"
+            };
+
+            sorts.Add(new SortOptions
+            {
+                Field = new FieldSort
+                {
+                    Field = sortField,
+                    Order = sortOrder
+                }
+            });
         }
         else
         {
-            _logger.LogError("❌ Failed to update game {GameId}: {DebugInformation}",
-                id, response.DebugInformation);
+            // Default sort by relevance score
+            sorts.Add(new SortOptions
+            {
+                Score = new ScoreSort { Order = SortOrder.Desc }
+            });
         }
+
+        return sorts;
     }
 }
