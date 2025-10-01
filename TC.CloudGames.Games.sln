@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.14.36518.9 d17.14
+# Visual Studio Version 18
+VisualStudioVersion = 18.0.11012.119
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.CloudGames.Games.Domain", "src\Core\TC.CloudGames.Games.Domain\TC.CloudGames.Games.Domain.csproj", "{2740302E-35C2-4F37-A3B7-537FEBFEB51E}"
 EndProject
@@ -43,7 +43,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.CloudGames.Messaging", "
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{7B1E8E3B-8752-4F50-8B2B-04F06C0F3917}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1 - Unit.Testing", "1 - Unit.Testing", "{58C86C63-5FAB-4DC7-AF28-05A4D29BF7D3}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1 - Unit", "1 - Unit", "{58C86C63-5FAB-4DC7-AF28-05A4D29BF7D3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.CloudGames.Games.Unit.Tests", "test\TC.CloudGames.Games.Unit.Tests\TC.CloudGames.Games.Unit.Tests.csproj", "{A103C818-A7B0-4A26-8EAA-066B6727A5D7}"
 EndProject
