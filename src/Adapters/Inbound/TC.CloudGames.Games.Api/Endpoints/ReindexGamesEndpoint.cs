@@ -41,7 +41,7 @@ public class ReindexGamesEndpoint : EndpointWithoutRequest
         try
         {
             // Get all active games from database
-            var games = await _store.Query<GameProjection>()
+            var games = await _store.Query()
                 .Where(g => g.IsActive)
                 .ToListAsync(ct);
 
