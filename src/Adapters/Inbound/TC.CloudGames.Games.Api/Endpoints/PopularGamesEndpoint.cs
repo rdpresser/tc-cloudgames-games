@@ -1,4 +1,4 @@
-﻿using TC.CloudGames.Games.Search;
+﻿using TC.CloudGames.Games.Infrastructure.Elasticsearch;
 
 namespace TC.CloudGames.Games.Api.Endpoints;
 
@@ -35,13 +35,13 @@ public class PopularGamesEndpoint : EndpointWithoutRequest
         try
         {
             const int size = 10; // Fixed size for popular games
-            
+
             Logger.LogInformation("📊 Retrieving popular games aggregation (size: {Size})", size);
 
             // Get aggregation data
             var result = await _search.GetPopularGamesAggregationAsync(size, ct);
             var genres = result.ToList();
-            
+
             if (!genres.Any())
             {
                 Logger.LogInformation("📭 No popular games data available");
@@ -61,8 +61,8 @@ public class PopularGamesEndpoint : EndpointWithoutRequest
                 {
                     Genre = g.Genre,
                     GameCount = g.Count,
-                    Percentage = genres.Sum(x => x.Count) > 0 
-                        ? Math.Round((double)g.Count / genres.Sum(x => x.Count) * 100, 2) 
+                    Percentage = genres.Sum(x => x.Count) > 0
+                        ? Math.Round((double)g.Count / genres.Sum(x => x.Count) * 100, 2)
                         : 0
                 }).ToList(),
                 Timestamp = DateTimeOffset.UtcNow

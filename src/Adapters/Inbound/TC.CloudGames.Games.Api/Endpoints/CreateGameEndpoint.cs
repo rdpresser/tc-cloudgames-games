@@ -1,4 +1,4 @@
-﻿using TC.CloudGames.Games.Search;
+﻿using TC.CloudGames.Games.Infrastructure.Elasticsearch;
 
 namespace TC.CloudGames.Games.Api.Endpoints
 {

@@ -17,9 +17,4 @@
     <ProjectReference Include="..\TC.CloudGames.Games.Infrastructure\TC.CloudGames.Games.Infrastructure.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Examples\" />
-    <Folder Include="Tests\" />
-  </ItemGroup>
-
 </Project>

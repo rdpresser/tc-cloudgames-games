@@ -6,6 +6,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="appsettings.elasticsearch.example.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="appsettings.elasticsearch.example.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
     <PackageReference Include="Marten" Version="8.11.0" />
     <PackageReference Include="FastEndpoints.Swagger" Version="7.0.1" />
@@ -30,7 +38,6 @@
     <ProjectReference Include="..\..\..\..\..\..\shared\common\src\TC.CloudGames.Messaging\TC.CloudGames.Messaging.csproj" />
     <ProjectReference Include="..\..\..\Core\TC.CloudGames.Games.Application\TC.CloudGames.Games.Application.csproj" />
     <ProjectReference Include="..\..\Outbound\TC.CloudGames.Games.Infrastructure\TC.CloudGames.Games.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\Outbound\TC.CloudGames.Games.Search\TC.CloudGames.Games.Search.csproj" />
   </ItemGroup>
 
 </Project>

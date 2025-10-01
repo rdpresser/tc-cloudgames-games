@@ -1,6 +1,4 @@
-﻿using TC.CloudGames.Games.Search;
-using TC.CloudGames.Games.Infrastructure.Projections;
-using Marten;
+﻿using TC.CloudGames.Games.Infrastructure.Elasticsearch;
 
 namespace TC.CloudGames.Games.Api.Endpoints;
 
@@ -50,10 +48,10 @@ public class ReindexGamesEndpoint : EndpointWithoutRequest
             if (!games.Any())
             {
                 Logger.LogInformation("📭 No games found to reindex");
-                await HttpContext.Response.WriteAsJsonAsync(new 
-                { 
-                    Message = "No games found to reindex", 
-                    Count = 0 
+                await HttpContext.Response.WriteAsJsonAsync(new
+                {
+                    Message = "No games found to reindex",
+                    Count = 0
                 }, ct);
                 return;
             }
@@ -64,21 +62,21 @@ public class ReindexGamesEndpoint : EndpointWithoutRequest
 
             Logger.LogInformation("✅ Games reindexed successfully");
 
-            await HttpContext.Response.WriteAsJsonAsync(new 
-            { 
-                Message = "Games reindexed successfully", 
+            await HttpContext.Response.WriteAsJsonAsync(new
+            {
+                Message = "Games reindexed successfully",
                 Count = games.Count,
-                IndexName = "search-xn8c" 
+                IndexName = "search-xn8c"
             }, ct);
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "❌ Error reindexing games data: {ErrorMessage}", ex.Message);
             HttpContext.Response.StatusCode = 500;
-            await HttpContext.Response.WriteAsJsonAsync(new 
-            { 
+            await HttpContext.Response.WriteAsJsonAsync(new
+            {
                 Error = "Failed to reindex games data",
-                Message = ex.Message 
+                Message = ex.Message
             }, ct);
         }
     }

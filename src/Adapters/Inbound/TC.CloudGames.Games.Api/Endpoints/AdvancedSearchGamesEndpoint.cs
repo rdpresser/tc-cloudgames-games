@@ -1,4 +1,4 @@
-using TC.CloudGames.Games.Search;
+﻿using TC.CloudGames.Games.Infrastructure.Elasticsearch;
 
 namespace TC.CloudGames.Games.Api.Endpoints;
 
@@ -42,10 +42,10 @@ public class AdvancedSearchGamesEndpoint : Endpoint<AdvancedSearchRequest>
                 return;
             }
 
-            Logger.LogInformation("?? Advanced search: Query='{Query}', Genres={Genres}, Platforms={Platforms}, Size={Size}", 
-                req.Query, 
-                req.Genres != null ? string.Join(",", req.Genres) : "none", 
-                req.Platforms != null ? string.Join(",", req.Platforms) : "none", 
+            Logger.LogInformation("🔍 Advanced search: Query='{Query}', Genres={Genres}, Platforms={Platforms}, Size={Size}",
+                req.Query,
+                req.Genres != null ? string.Join(",", req.Genres) : "none",
+                req.Platforms != null ? string.Join(",", req.Platforms) : "none",
                 req.Size);
 
             // Create search request
@@ -68,7 +68,7 @@ public class AdvancedSearchGamesEndpoint : Endpoint<AdvancedSearchRequest>
             // Perform advanced search
             var result = await _search.SearchAdvancedAsync(searchRequest, ct);
 
-            Logger.LogInformation("? Advanced search completed: {HitCount} hits found (total: {Total})", 
+            Logger.LogInformation("✅ Advanced search completed: {HitCount} hits found (total: {Total})",
                 result.Hits.Count, result.Total);
 
             // Return structured response
@@ -79,8 +79,8 @@ public class AdvancedSearchGamesEndpoint : Endpoint<AdvancedSearchRequest>
                 {
                     req.Genres,
                     req.Platforms,
-                    PriceRange = req.MinPrice.HasValue || req.MaxPrice.HasValue 
-                        ? new { Min = req.MinPrice, Max = req.MaxPrice } 
+                    PriceRange = req.MinPrice.HasValue || req.MaxPrice.HasValue
+                        ? new { Min = req.MinPrice, Max = req.MaxPrice }
                         : null,
                     req.MinRating,
                     ReleaseDateRange = req.ReleaseDateFrom.HasValue || req.ReleaseDateTo.HasValue
@@ -108,7 +108,7 @@ public class AdvancedSearchGamesEndpoint : Endpoint<AdvancedSearchRequest>
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "? Error in advanced search: {ErrorMessage}", ex.Message);
+            Logger.LogError(ex, "❌ Error in advanced search: {ErrorMessage}", ex.Message);
             HttpContext.Response.StatusCode = 500;
             await HttpContext.Response.WriteAsJsonAsync(new { Error = "Internal server error" }, ct);
         }

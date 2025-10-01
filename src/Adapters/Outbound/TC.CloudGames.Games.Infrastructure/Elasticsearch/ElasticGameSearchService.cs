@@ -3,9 +3,9 @@ using Elastic.Clients.Elasticsearch.Aggregations;
 using Elastic.Clients.Elasticsearch.Core.Bulk;
 using Elastic.Clients.Elasticsearch.QueryDsl;
 using Microsoft.Extensions.Logging;
-using TC.CloudGames.Games.Infrastructure.Projections;
+using TC.CloudGames.SharedKernel.Infrastructure.Elasticsearch;
 
-namespace TC.CloudGames.Games.Search;
+namespace TC.CloudGames.Games.Infrastructure.Elasticsearch;
 
 /// <summary>
 /// Elasticsearch implementation of game search service.
@@ -17,8 +17,7 @@ public class ElasticGameSearchService : IGameSearchService
     private readonly ElasticSearchOptions _options;
     private readonly ILogger<ElasticGameSearchService> _logger;
 
-    public ElasticGameSearchService(
-        ElasticsearchClient client,
+    public ElasticGameSearchService(ElasticsearchClient client,
         ElasticSearchOptions options,
         ILogger<ElasticGameSearchService> logger)
     {
@@ -90,7 +89,7 @@ public class ElasticGameSearchService : IGameSearchService
             if (response.IsValidResponse)
             {
                 _logger.LogInformation("✅ Bulk indexing completed successfully for {GameCount} games", gamesList.Count);
-                
+
                 if (response.Errors)
                 {
                     var errorCount = response.Items.Count(i => i.Error != null);
@@ -352,8 +351,8 @@ public class ElasticGameSearchService : IGameSearchService
 
         if (!string.IsNullOrWhiteSpace(request.SortBy))
         {
-            var sortOrder = request.SortDirection.ToLowerInvariant() == "asc" 
-                ? SortOrder.Asc 
+            var sortOrder = request.SortDirection.ToLowerInvariant() == "asc"
+                ? SortOrder.Asc
                 : SortOrder.Desc;
 
             var sortField = request.SortBy.ToLowerInvariant() switch

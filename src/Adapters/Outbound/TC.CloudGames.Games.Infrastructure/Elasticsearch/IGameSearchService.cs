@@ -1,6 +1,6 @@
 ﻿using TC.CloudGames.Games.Infrastructure.Projections;
 
-namespace TC.CloudGames.Games.Search;
+namespace TC.CloudGames.Games.Infrastructure.Elasticsearch;
 
 /// <summary>
 /// Service interface for game search operations.

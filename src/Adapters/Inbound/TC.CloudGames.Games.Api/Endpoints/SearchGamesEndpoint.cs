@@ -1,4 +1,4 @@
-﻿using TC.CloudGames.Games.Search;
+﻿using TC.CloudGames.Games.Infrastructure.Elasticsearch;
 
 namespace TC.CloudGames.Games.Api.Endpoints;
 
@@ -19,7 +19,7 @@ public class SearchGamesEndpoint : Endpoint<SearchRequest>
     {
         Get("game/search");
         AllowAnonymous(); // Allow public search access
-        
+
         Summary(s =>
         {
             s.Summary = "Search games using full-text search";
@@ -46,8 +46,8 @@ public class SearchGamesEndpoint : Endpoint<SearchRequest>
 
             // Perform search
             var result = await _search.SearchAsync(req.Query, req.Size, ct);
-            
-            Logger.LogInformation("✅ Search completed: {HitCount} hits found (total: {Total})", 
+
+            Logger.LogInformation("✅ Search completed: {HitCount} hits found (total: {Total})",
                 result.Hits.Count, result.Total);
 
             // Return structured response

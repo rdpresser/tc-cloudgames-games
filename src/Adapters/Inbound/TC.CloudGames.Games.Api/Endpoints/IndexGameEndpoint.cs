@@ -1,5 +1,4 @@
-﻿using TC.CloudGames.Games.Search;
-using TC.CloudGames.Games.Infrastructure.Projections;
+﻿using TC.CloudGames.Games.Infrastructure.Elasticsearch;
 
 namespace TC.CloudGames.Games.Api.Endpoints;
 
@@ -65,7 +64,7 @@ public class IndexGameEndpoint : Endpoint<GameProjection>
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "❌ Error indexing game {GameName} (ID: {GameId}): {ErrorMessage}", 
+            Logger.LogError(ex, "❌ Error indexing game {GameName} (ID: {GameId}): {ErrorMessage}",
                 req.Name, req.Id, ex.Message);
             HttpContext.Response.StatusCode = 500;
             await HttpContext.Response.WriteAsJsonAsync(new { Error = "Internal server error" }, ct);

@@ -1,5 +1,3 @@
-using TC.CloudGames.Games.Search;
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure environment variables (will skip if running under .NET Aspire)
@@ -15,12 +13,13 @@ builder.Host.UseCustomSerilog(builder.Configuration);
 // Register application, infrastructure and API services
 builder.Services.AddGameServices(builder);
 builder.Services.AddApplication();
-builder.Services.AddInfrastructure();
-builder.Services.AddElasticSearch(builder.Configuration);
+builder.Services
+    .AddInfrastructure()
+    .AddElasticSearch(builder.Configuration);
 
 var app = builder.Build();
 
-// Note: In Elasticsearch Cloud Serverless, indices are created automatically on first document insertion
+// Note: In Elasticsearch Cloud, indices are created automatically on first document insertion
 // No manual index initialization is required
 
 if (!builder.Environment.IsEnvironment("Testing"))
