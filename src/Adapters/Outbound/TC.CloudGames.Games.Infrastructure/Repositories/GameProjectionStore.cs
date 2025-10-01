@@ -11,7 +11,7 @@ namespace TC.CloudGames.Games.Infrastructure.Repositories
             _session = session ?? throw new ArgumentNullException(nameof(session));
         }
 
-        public IMartenQueryable<GameProjection> Query<T>() where T : notnull
+        public IMartenQueryable<GameProjection> Query()
         {
             return _session.Query<GameProjection>();
         }

@@ -4,6 +4,6 @@ namespace TC.CloudGames.Games.Infrastructure.Repositories
 {
     public interface IGameProjectionStore
     {
-        IMartenQueryable<GameProjection> Query<T>() where T : notnull;
+        IMartenQueryable<GameProjection> Query();
     }
 }
