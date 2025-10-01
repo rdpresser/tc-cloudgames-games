@@ -1,4 +1,5 @@
-﻿using TC.CloudGames.Games.Infrastructure.Elasticsearch;
+﻿using TC.CloudGames.Games.Application.Abstractions.Projections;
+using TC.CloudGames.Games.Infrastructure.Repositories;
 
 namespace TC.CloudGames.Games.Api.Endpoints;
 
@@ -8,13 +9,15 @@ namespace TC.CloudGames.Games.Api.Endpoints;
 /// </summary>
 public class ReindexGamesEndpoint : EndpointWithoutRequest
 {
-    private readonly IGameSearchService _search;
-    private readonly IDocumentStore _store;
+    private readonly IGameElasticsearchService _search;
+    private readonly IGameProjectionStore _store;
+    private readonly ILogger<ReindexGamesEndpoint> _logger;
 
-    public ReindexGamesEndpoint(IGameSearchService search, IDocumentStore store)
+    public ReindexGamesEndpoint(IGameElasticsearchService search, IGameProjectionStore store, ILogger<ReindexGamesEndpoint> logger)
     {
-        _search = search;
-        _store = store;
+        _search = search ?? throw new ArgumentNullException(nameof(search));
+        _store = store ?? throw new ArgumentNullException(nameof(store));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public override void Configure()
@@ -38,17 +41,17 @@ public class ReindexGamesEndpoint : EndpointWithoutRequest
         try
         {
             // Get all active games from database
-            using var session = _store.QuerySession();
-            var games = await session.Query<GameProjection>()
+            var games = await _store.Query<GameProjection>()
                 .Where(g => g.IsActive)
                 .ToListAsync(ct);
 
-            Logger.LogInformation("🔄 Starting reindex operation for {GameCount} games...", games.Count);
+            _logger.LogInformation("Starting reindex operation for {GameCount} games...", games.Count);
 
             if (!games.Any())
             {
-                Logger.LogInformation("📭 No games found to reindex");
-                await HttpContext.Response.WriteAsJsonAsync(new
+                _logger.LogInformation("No games found to reindex");
+
+                await Send.OkAsync(new
                 {
                     Message = "No games found to reindex",
                     Count = 0
@@ -60,9 +63,9 @@ public class ReindexGamesEndpoint : EndpointWithoutRequest
             // In Elasticsearch Cloud, the index will be created automatically on first document
             await _search.BulkIndexAsync(games, ct);
 
-            Logger.LogInformation("✅ Games reindexed successfully");
+            _logger.LogInformation("✅ Games reindexed successfully");
 
-            await HttpContext.Response.WriteAsJsonAsync(new
+            await Send.OkAsync(new
             {
                 Message = "Games reindexed successfully",
                 Count = games.Count,
@@ -71,13 +74,8 @@ public class ReindexGamesEndpoint : EndpointWithoutRequest
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "❌ Error reindexing games data: {ErrorMessage}", ex.Message);
-            HttpContext.Response.StatusCode = 500;
-            await HttpContext.Response.WriteAsJsonAsync(new
-            {
-                Error = "Failed to reindex games data",
-                Message = ex.Message
-            }, ct);
+            _logger.LogError(ex, "Error reindexing games data: {ErrorMessage}", ex.Message);
+            await Send.ErrorsAsync((int)System.Net.HttpStatusCode.InternalServerError, ct);
         }
     }
 }

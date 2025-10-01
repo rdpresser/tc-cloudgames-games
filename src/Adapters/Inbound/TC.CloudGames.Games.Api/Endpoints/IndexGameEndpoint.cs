@@ -1,4 +1,5 @@
-﻿using TC.CloudGames.Games.Infrastructure.Elasticsearch;
+﻿using TC.CloudGames.Games.Application.Abstractions.Ports;
+using TC.CloudGames.Games.Application.Abstractions.Projections;
 
 namespace TC.CloudGames.Games.Api.Endpoints;
 
@@ -8,11 +9,13 @@ namespace TC.CloudGames.Games.Api.Endpoints;
 /// </summary>
 public class IndexGameEndpoint : Endpoint<GameProjection>
 {
-    private readonly IGameSearchService _search;
+    private readonly ILogger<IndexGameEndpoint> _logger;
+    private readonly IGameElasticsearchService _search;
 
-    public IndexGameEndpoint(IGameSearchService search)
+    public IndexGameEndpoint(ILogger<IndexGameEndpoint> logger, IGameElasticsearchService search)
     {
-        _search = search;
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _search = search ?? throw new ArgumentNullException(nameof(search));
     }
 
     public override void Configure()
@@ -39,17 +42,17 @@ public class IndexGameEndpoint : Endpoint<GameProjection>
             // Validate required fields
             if (req.Id == Guid.Empty || string.IsNullOrWhiteSpace(req.Name))
             {
-                HttpContext.Response.StatusCode = 400;
-                await HttpContext.Response.WriteAsJsonAsync(new { Error = "Game ID and Name are required" }, ct);
+                AddError("Game ID and Name are required", "Id|Name.Required");
+                await Send.ErrorsAsync(cancellation: ct).ConfigureAwait(false);
                 return;
             }
 
-            Logger.LogInformation("📝 Indexing game: {GameName} (ID: {GameId})", req.Name, req.Id);
+            _logger.LogInformation("Indexing game: {GameName} (ID: {GameId})", req.Name, req.Id);
 
             // Index the game
             await _search.IndexAsync(req, ct);
 
-            Logger.LogInformation("✅ Game indexed successfully: {GameName}", req.Name);
+            _logger.LogInformation("Game indexed successfully: {GameName}", req.Name);
 
             // Return success response
             var response = new
@@ -60,14 +63,12 @@ public class IndexGameEndpoint : Endpoint<GameProjection>
                 IndexName = "search-xn8c"
             };
 
-            await HttpContext.Response.WriteAsJsonAsync(response, ct);
+            await Send.OkAsync(response, cancellation: ct).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "❌ Error indexing game {GameName} (ID: {GameId}): {ErrorMessage}",
-                req.Name, req.Id, ex.Message);
-            HttpContext.Response.StatusCode = 500;
-            await HttpContext.Response.WriteAsJsonAsync(new { Error = "Internal server error" }, ct);
+            _logger.LogError(ex, "Error indexing game {GameName} (ID: {GameId}): {ErrorMessage}", req.Name, req.Id, ex.Message);
+            await Send.ErrorsAsync((int)HttpStatusCode.InternalServerError, cancellation: ct).ConfigureAwait(false);
         }
     }
 }

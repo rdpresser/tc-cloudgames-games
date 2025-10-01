@@ -1,6 +1,4 @@
-﻿using TC.CloudGames.Games.Infrastructure.Elasticsearch;
-
-namespace TC.CloudGames.Games.Api.Endpoints;
+﻿namespace TC.CloudGames.Games.Api.Endpoints;
 
 /// <summary>
 /// Endpoint for searching games using Elasticsearch.
@@ -8,11 +6,13 @@ namespace TC.CloudGames.Games.Api.Endpoints;
 /// </summary>
 public class SearchGamesEndpoint : Endpoint<SearchRequest>
 {
-    private readonly IGameSearchService _search;
+    private readonly IGameElasticsearchService _search;
+    private readonly ILogger<SearchGamesEndpoint> _logger;
 
-    public SearchGamesEndpoint(IGameSearchService search)
+    public SearchGamesEndpoint(IGameElasticsearchService search, ILogger<SearchGamesEndpoint> logger)
     {
-        _search = search;
+        _search = search ?? throw new ArgumentNullException(nameof(search));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public override void Configure()
@@ -37,17 +37,17 @@ public class SearchGamesEndpoint : Endpoint<SearchRequest>
             // Validate search parameters
             if (req.Size is < 1 or > 100)
             {
-                HttpContext.Response.StatusCode = 400;
-                await HttpContext.Response.WriteAsJsonAsync(new { Error = "Size must be between 1 and 100" }, ct);
+                AddError("Size must be between 1 and 100", "Size.Invalid");
+                await Send.ErrorsAsync(cancellation: ct);
                 return;
             }
 
-            Logger.LogInformation("🔍 Searching games with query: '{Query}' (size: {Size})", req.Query, req.Size);
+            _logger.LogInformation("Searching games with query: '{Query}' (size: {Size})", req.Query, req.Size);
 
             // Perform search
             var result = await _search.SearchAsync(req.Query, req.Size, ct);
 
-            Logger.LogInformation("✅ Search completed: {HitCount} hits found (total: {Total})",
+            _logger.LogInformation("Search completed: {HitCount} hits found (total: {Total})",
                 result.Hits.Count, result.Total);
 
             // Return structured response
@@ -60,13 +60,12 @@ public class SearchGamesEndpoint : Endpoint<SearchRequest>
                 Results = result.Hits
             };
 
-            await HttpContext.Response.WriteAsJsonAsync(response, ct);
+            await Send.OkAsync(response, cancellation: ct);
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "❌ Error searching games with query '{Query}': {ErrorMessage}", req.Query, ex.Message);
-            HttpContext.Response.StatusCode = 500;
-            await HttpContext.Response.WriteAsJsonAsync(new { Error = "Internal server error" }, ct);
+            _logger.LogError(ex, "Error searching games with query '{Query}': {ErrorMessage}", req.Query, ex.Message);
+            await Send.ErrorsAsync((int)System.Net.HttpStatusCode.InternalServerError, ct);
         }
     }
 }

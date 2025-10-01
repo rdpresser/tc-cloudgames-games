@@ -1,12 +1,12 @@
-﻿using TC.CloudGames.Games.Infrastructure.Projections;
+﻿using TC.CloudGames.Games.Application.Abstractions.Projections;
 
-namespace TC.CloudGames.Games.Infrastructure.Elasticsearch;
+namespace TC.CloudGames.Games.Application.Abstractions.Ports;
 
 /// <summary>
 /// Service interface for game search operations.
 /// Optimized for Elasticsearch Cloud Serverless with automatic index management.
 /// </summary>
-public interface IGameSearchService
+public interface IGameElasticsearchService
 {
     /// <summary>
     /// Indexes a single game document.

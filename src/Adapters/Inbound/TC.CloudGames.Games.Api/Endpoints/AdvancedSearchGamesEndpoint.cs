@@ -1,4 +1,4 @@
-﻿using TC.CloudGames.Games.Infrastructure.Elasticsearch;
+﻿using TC.CloudGames.Games.Application.Abstractions.Ports;
 
 namespace TC.CloudGames.Games.Api.Endpoints;
 
@@ -8,11 +8,13 @@ namespace TC.CloudGames.Games.Api.Endpoints;
 /// </summary>
 public class AdvancedSearchGamesEndpoint : Endpoint<AdvancedSearchRequest>
 {
-    private readonly IGameSearchService _search;
+    private readonly IGameElasticsearchService _search;
+    private readonly ILogger<AdvancedSearchGamesEndpoint> _logger;
 
-    public AdvancedSearchGamesEndpoint(IGameSearchService search)
+    public AdvancedSearchGamesEndpoint(IGameElasticsearchService search, ILogger<AdvancedSearchGamesEndpoint> logger)
     {
-        _search = search;
+        _search = search ?? throw new ArgumentNullException(nameof(search));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public override void Configure()
@@ -37,15 +39,15 @@ public class AdvancedSearchGamesEndpoint : Endpoint<AdvancedSearchRequest>
             // Validate request
             if (!req.IsValid)
             {
-                HttpContext.Response.StatusCode = 400;
-                await HttpContext.Response.WriteAsJsonAsync(new { Error = "Invalid search parameters" }, ct);
+                AddError("One or more search parameters are invalid", "Request.Invalid");
+                await Send.ErrorsAsync(cancellation: ct);
                 return;
             }
 
-            Logger.LogInformation("🔍 Advanced search: Query='{Query}', Genres={Genres}, Platforms={Platforms}, Size={Size}",
+            _logger.LogInformation("Advanced search: Query='{Query}', Genres={Genres}, Platforms={Platforms}, Size={Size}",
                 req.Query,
-                req.Genres != null ? string.Join(",", req.Genres) : "none",
-                req.Platforms != null ? string.Join(",", req.Platforms) : "none",
+                req.Genres != null ? req.Genres.JoinWithQuotes() : "none",
+                req.Platforms != null ? req.Platforms.JoinWithQuotes() : "none",
                 req.Size);
 
             // Create search request
@@ -68,8 +70,7 @@ public class AdvancedSearchGamesEndpoint : Endpoint<AdvancedSearchRequest>
             // Perform advanced search
             var result = await _search.SearchAdvancedAsync(searchRequest, ct);
 
-            Logger.LogInformation("✅ Advanced search completed: {HitCount} hits found (total: {Total})",
-                result.Hits.Count, result.Total);
+            _logger.LogInformation("✅ Advanced search completed: {HitCount} hits found (total: {Total})", result.Hits.Count, result.Total);
 
             // Return structured response
             var response = new
@@ -104,13 +105,12 @@ public class AdvancedSearchGamesEndpoint : Endpoint<AdvancedSearchRequest>
                 Results = result.Hits
             };
 
-            await HttpContext.Response.WriteAsJsonAsync(response, ct);
+            await Send.OkAsync(response, cancellation: ct);
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "❌ Error in advanced search: {ErrorMessage}", ex.Message);
-            HttpContext.Response.StatusCode = 500;
-            await HttpContext.Response.WriteAsJsonAsync(new { Error = "Internal server error" }, ct);
+            _logger.LogError(ex, "❌ Error in advanced search: {ErrorMessage}", ex.Message);
+            await Send.ErrorsAsync((int)HttpStatusCode.InternalServerError, cancellation: ct);
         }
     }
 }

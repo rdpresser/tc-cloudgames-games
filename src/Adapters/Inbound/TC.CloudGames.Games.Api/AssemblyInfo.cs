@@ -31,6 +31,7 @@ global using TC.CloudGames.Games.Api.Middleware;
 global using TC.CloudGames.Games.Api.Telemetry;
 global using TC.CloudGames.Games.Application;
 global using TC.CloudGames.Games.Application.Abstractions;
+global using TC.CloudGames.Games.Application.Abstractions.Ports;
 global using TC.CloudGames.Games.Application.MessageBrokerHandlers;
 global using TC.CloudGames.Games.Application.UseCases.CreateGame;
 global using TC.CloudGames.Games.Application.UseCases.GetGameById;

@@ -1,16 +1,7 @@
-﻿using TC.CloudGames.Games.Infrastructure.Elasticsearch;
-
-namespace TC.CloudGames.Games.Api.Endpoints
+﻿namespace TC.CloudGames.Games.Api.Endpoints
 {
     public sealed class CreateGameEndpoint : BaseApiEndpoint<CreateGameCommand, CreateGameResponse>
     {
-        private readonly IGameSearchService _searchService;
-
-        public CreateGameEndpoint(IGameSearchService searchService)
-        {
-            _searchService = searchService;
-        }
-
         public override void Configure()
         {
             Post("game");
@@ -39,9 +30,6 @@ namespace TC.CloudGames.Games.Api.Endpoints
 
             if (response.IsSuccess)
             {
-                var projection = MapToProjection(response.Value);
-                await _searchService.IndexAsync(projection, ct);
-
                 string location = $"{BaseURL}api/game/";
                 object routeValues = new { id = response.Value.Id };
                 await Send.CreatedAtAsync(location, routeValues, response.Value, cancellation: ct).ConfigureAwait(false);
@@ -65,7 +53,7 @@ namespace TC.CloudGames.Games.Api.Endpoints
                 GameDetails: new CreateGame.GameDetails
                 (
                     Genre: "Genre",
-                    Platforms: [.. Domain.ValueObjects.GameDetails.ValidPlatforms],
+                    Platforms: [.. GameDetails.ValidPlatforms],
                     Tags: "Tags",
                     GameMode: $"Choose one of valid game modes: {Domain.ValueObjects.GameDetails.ValidGameModes.JoinWithQuotes()}",
                     DistributionFormat: $"Choose one of valid distribution format: {Domain.ValueObjects.GameDetails.ValidDistributionFormats.JoinWithQuotes()}",
@@ -93,10 +81,10 @@ namespace TC.CloudGames.Games.Api.Endpoints
                 Playtime: new CreateGame.Playtime(10, 1),
                 GameDetails: new CreateGame.GameDetails(
                     Genre: "Genre",
-                    Platforms: [.. Domain.ValueObjects.GameDetails.ValidPlatforms],
+                    Platforms: [.. GameDetails.ValidPlatforms],
                     Tags: "Tags",
-                    GameMode: Domain.ValueObjects.GameDetails.ValidGameModes.First(),
-                    DistributionFormat: Domain.ValueObjects.GameDetails.ValidDistributionFormats.First(),
+                    GameMode: GameDetails.ValidGameModes.First(),
+                    DistributionFormat: GameDetails.ValidDistributionFormats.First(),
                     AvailableLanguages: "Available Languages",
                     SupportsDlcs: true),
                 SystemRequirements: new CreateGame.SystemRequirements("Minimum Requirements", "Recommended Requirements"),
@@ -105,26 +93,5 @@ namespace TC.CloudGames.Games.Api.Endpoints
                 GameStatus: GameAggregate.ValidGameStatus.First()
             );
         }
-
-        private static GameProjection MapToProjection(CreateGameResponse response) => new()
-        {
-            Id = response.Id,
-            Name = response.Name,
-            Description = response.Description,
-            ReleaseDate = response.ReleaseDate,
-            AgeRating = response.AgeRating,
-            Developer = response.DeveloperInfo.Developer,
-            Publisher = response.DeveloperInfo.Publisher,
-            PriceAmount = response.Price,
-            RatingAverage = response.Rating,
-            Genre = response.GameDetails.Genre,
-            Platforms = response.GameDetails.Platforms,
-            Tags = response.GameDetails.Tags,
-            GameMode = response.GameDetails.GameMode,
-            DistributionFormat = response.GameDetails.DistributionFormat,
-            AvailableLanguages = response.GameDetails.AvailableLanguages,
-            SupportsDlcs = response.GameDetails.SupportsDlcs,
-            GameStatus = response.GameStatus
-        };
     }
 }

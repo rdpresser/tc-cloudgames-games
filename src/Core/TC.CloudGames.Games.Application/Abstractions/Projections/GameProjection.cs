@@ -1,4 +1,4 @@
-﻿namespace TC.CloudGames.Games.Infrastructure.Projections
+﻿namespace TC.CloudGames.Games.Application.Abstractions.Projections
 {
     /// <summary>
     /// Read model projection for Game aggregate optimized for queries.

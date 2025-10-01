@@ -1,6 +1,4 @@
-﻿using TC.CloudGames.Games.Infrastructure.Elasticsearch;
-
-namespace TC.CloudGames.Games.Api.Endpoints;
+﻿namespace TC.CloudGames.Games.Api.Endpoints;
 
 /// <summary>
 /// Endpoint for retrieving popular games aggregation data by genre.
@@ -8,11 +6,13 @@ namespace TC.CloudGames.Games.Api.Endpoints;
 /// </summary>
 public class PopularGamesEndpoint : EndpointWithoutRequest
 {
-    private readonly IGameSearchService _search;
+    private readonly IGameElasticsearchService _search;
+    private readonly ILogger<PopularGamesEndpoint> _logger;
 
-    public PopularGamesEndpoint(IGameSearchService search)
+    public PopularGamesEndpoint(IGameElasticsearchService search, ILogger<PopularGamesEndpoint> logger)
     {
-        _search = search;
+        _search = search ?? throw new ArgumentNullException(nameof(search));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public override void Configure()
@@ -36,7 +36,7 @@ public class PopularGamesEndpoint : EndpointWithoutRequest
         {
             const int size = 10; // Fixed size for popular games
 
-            Logger.LogInformation("📊 Retrieving popular games aggregation (size: {Size})", size);
+            _logger.LogInformation("Retrieving popular games aggregation (size: {Size})", size);
 
             // Get aggregation data
             var result = await _search.GetPopularGamesAggregationAsync(size, ct);
@@ -44,13 +44,13 @@ public class PopularGamesEndpoint : EndpointWithoutRequest
 
             if (!genres.Any())
             {
-                Logger.LogInformation("📭 No popular games data available");
-                HttpContext.Response.StatusCode = 404;
-                await HttpContext.Response.WriteAsJsonAsync(new { Message = "No popular games data available" }, ct);
+                _logger.LogInformation("No popular games data available");
+                AddError("No popular games data available");
+                await Send.ErrorsAsync((int)HttpStatusCode.NotFound, ct);
                 return;
             }
 
-            Logger.LogInformation("✅ Retrieved {GenreCount} popular genres", genres.Count);
+            _logger.LogInformation("Retrieved {GenreCount} popular genres", genres.Count);
 
             // Return structured response
             var response = new
@@ -68,13 +68,12 @@ public class PopularGamesEndpoint : EndpointWithoutRequest
                 Timestamp = DateTimeOffset.UtcNow
             };
 
-            await HttpContext.Response.WriteAsJsonAsync(response, ct);
+            await Send.OkAsync(response, cancellation: ct);
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "❌ Error retrieving popular games: {ErrorMessage}", ex.Message);
-            HttpContext.Response.StatusCode = 500;
-            await HttpContext.Response.WriteAsJsonAsync(new { Error = "Internal server error" }, ct);
+            _logger.LogError(ex, "Error retrieving popular games: {ErrorMessage}", ex.Message);
+            await Send.ErrorsAsync((int)HttpStatusCode.InternalServerError, cancellation: ct);
         }
     }
 }
