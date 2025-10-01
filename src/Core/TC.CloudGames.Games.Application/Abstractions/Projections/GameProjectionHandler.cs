@@ -1,6 +1,6 @@
 ﻿using static TC.CloudGames.Games.Domain.Aggregates.Game.GameAggregate;
 
-namespace TC.CloudGames.Games.Infrastructure.Projections
+namespace TC.CloudGames.Games.Application.Abstractions.Projections
 {
     public class GameProjectionHandler : EventProjection
     {

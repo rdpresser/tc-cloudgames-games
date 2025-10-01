@@ -1,4 +1,6 @@
-﻿namespace TC.CloudGames.Games.Application.UseCases.CreateGame
+﻿using TC.CloudGames.Games.Application.Abstractions.Projections;
+
+namespace TC.CloudGames.Games.Application.UseCases.CreateGame
 {
     public static class CreateGameMapper
     {
@@ -32,7 +34,7 @@
 
         public static CreateGameResponse FromAggregate(GameAggregate aggregate)
         {
-            return new CreateGameResponse(
+            return new(
                 aggregate.Id,
                 aggregate.Name,
                 aggregate.ReleaseDate,
@@ -62,7 +64,7 @@
 
         public static GameCreatedIntegrationEvent ToIntegrationEvent(GameAggregate.GameCreatedDomainEvent domainEvent)
         {
-            return new GameCreatedIntegrationEvent(
+            return new(
                 domainEvent.AggregateId,
                 domainEvent.Name,
                 domainEvent.ReleaseDate.ToDateTime(TimeOnly.MinValue),
@@ -88,6 +90,30 @@
                 domainEvent.GameStatus,
                 domainEvent.OccurredOn
             );
+        }
+
+        public static GameProjection MapToProjection(CreateGameResponse response)
+        {
+            return new()
+            {
+                Id = response.Id,
+                Name = response.Name,
+                Description = response.Description,
+                ReleaseDate = response.ReleaseDate,
+                AgeRating = response.AgeRating,
+                Developer = response.DeveloperInfo.Developer,
+                Publisher = response.DeveloperInfo.Publisher,
+                PriceAmount = response.Price,
+                RatingAverage = response.Rating,
+                Genre = response.GameDetails.Genre,
+                Platforms = response.GameDetails.Platforms,
+                Tags = response.GameDetails.Tags,
+                GameMode = response.GameDetails.GameMode,
+                DistributionFormat = response.GameDetails.DistributionFormat,
+                AvailableLanguages = response.GameDetails.AvailableLanguages,
+                SupportsDlcs = response.GameDetails.SupportsDlcs,
+                GameStatus = response.GameStatus
+            };
         }
     }
 }

@@ -1,4 +1,6 @@
-﻿namespace TC.CloudGames.Games.Infrastructure.Repositories
+﻿using TC.CloudGames.Games.Application.Abstractions.Projections;
+
+namespace TC.CloudGames.Games.Infrastructure.Repositories
 {
     public class GameRepository : BaseRepository<GameAggregate>, IGameRepository
     {

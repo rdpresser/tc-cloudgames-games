@@ -1,6 +1,8 @@
 ﻿global using Ardalis.Result;
 global using FastEndpoints;
 global using FluentValidation;
+global using Marten;
+global using Marten.Events.Projections;
 global using Microsoft.Extensions.DependencyInjection;
 global using Microsoft.Extensions.Logging;
 global using System.Diagnostics.CodeAnalysis;
