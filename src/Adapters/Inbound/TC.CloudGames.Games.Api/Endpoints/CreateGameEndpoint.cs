@@ -53,7 +53,7 @@
                 GameDetails: new CreateGame.GameDetails
                 (
                     Genre: "Genre",
-                    Platforms: [.. Domain.ValueObjects.GameDetails.ValidPlatforms],
+                    Platforms: [.. GameDetails.ValidPlatforms],
                     Tags: "Tags",
                     GameMode: $"Choose one of valid game modes: {Domain.ValueObjects.GameDetails.ValidGameModes.JoinWithQuotes()}",
                     DistributionFormat: $"Choose one of valid distribution format: {Domain.ValueObjects.GameDetails.ValidDistributionFormats.JoinWithQuotes()}",
@@ -81,10 +81,10 @@
                 Playtime: new CreateGame.Playtime(10, 1),
                 GameDetails: new CreateGame.GameDetails(
                     Genre: "Genre",
-                    Platforms: [.. Domain.ValueObjects.GameDetails.ValidPlatforms],
+                    Platforms: [.. GameDetails.ValidPlatforms],
                     Tags: "Tags",
-                    GameMode: Domain.ValueObjects.GameDetails.ValidGameModes.First(),
-                    DistributionFormat: Domain.ValueObjects.GameDetails.ValidDistributionFormats.First(),
+                    GameMode: GameDetails.ValidGameModes.First(),
+                    DistributionFormat: GameDetails.ValidDistributionFormats.First(),
                     AvailableLanguages: "Available Languages",
                     SupportsDlcs: true),
                 SystemRequirements: new CreateGame.SystemRequirements("Minimum Requirements", "Recommended Requirements"),

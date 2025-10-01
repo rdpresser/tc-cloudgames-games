@@ -1,4 +1,5 @@
 ﻿using Marten.Events.Projections;
+using TC.CloudGames.Games.Application.Abstractions.Projections;
 using TC.CloudGames.Games.Domain.Aggregates.UserGameLibrary;
 
 namespace TC.CloudGames.Games.Api.Extensions

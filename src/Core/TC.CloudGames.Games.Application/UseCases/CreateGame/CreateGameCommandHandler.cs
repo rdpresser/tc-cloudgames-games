@@ -5,16 +5,19 @@
     {
         private readonly IMartenOutbox _outbox;
         private readonly ILogger<CreateGameCommandHandler> _logger;
+        private readonly IGameElasticsearchService _searchService;
 
         public CreateGameCommandHandler(
             IGameRepository repository,
             IUserContext userContext,
             IMartenOutbox outbox,
+            IGameElasticsearchService searchService,
             ILogger<CreateGameCommandHandler> logger)
             : base(repository, userContext)
         {
             _outbox = outbox ?? throw new ArgumentNullException(nameof(outbox));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _searchService = searchService ?? throw new ArgumentNullException(nameof(searchService));
         }
 
         /// <summary>
@@ -70,6 +73,12 @@
             }
         }
 
+        private async Task ElasticsearchIndexAsync(CreateGameResponse response, CancellationToken cancellationToken)
+        {
+            var projection = CreateGameMapper.MapToProjection(response);
+            await _searchService.IndexAsync(projection, cancellationToken);
+        }
+
         /// <summary>
         /// Main command execution.
         /// Uses the base template (map → validate → save → publish → commit).
@@ -108,7 +117,12 @@
             _logger.LogInformation("Game {GameId} created successfully and events committed", aggregate.Id);
 
             // 6. Map response
-            return CreateGameMapper.FromAggregate(aggregate);
+            var response = CreateGameMapper.FromAggregate(aggregate);
+
+            // Elasticsearch 
+            await ElasticsearchIndexAsync(response, ct);
+
+            return response;
         }
     }
 }

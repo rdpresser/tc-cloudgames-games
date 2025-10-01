@@ -13,9 +13,14 @@ builder.Host.UseCustomSerilog(builder.Configuration);
 // Register application, infrastructure and API services
 builder.Services.AddGameServices(builder);
 builder.Services.AddApplication();
-builder.Services.AddInfrastructure();
+builder.Services
+    .AddInfrastructure()
+    .AddElasticSearch(builder.Configuration);
 
 var app = builder.Build();
+
+// Note: In Elasticsearch Cloud, indices are created automatically on first document insertion
+// No manual index initialization is required
 
 if (!builder.Environment.IsEnvironment("Testing"))
 {
