@@ -26,7 +26,7 @@ namespace TC.CloudGames.Games.Infrastructure
         public static IServiceCollection AddElasticSearch(this IServiceCollection services, IConfiguration configuration)
         {
             // Configure Elasticsearch options
-            ////services.Configure<ElasticSearchOptions>(configuration.GetSection("Elasticsearch"));
+            services.Configure<ElasticSearchOptions>(configuration.GetSection("Elasticsearch"));
 
             // Register Elasticsearch client provider and client
             services.AddSingleton<IElasticsearchClientProvider, ElasticsearchClientProvider>();
