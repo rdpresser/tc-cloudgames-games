@@ -5,10 +5,7 @@ builder.ConfigureEnvironmentVariables();
 
 // Configure Serilog as logging provider
 builder.Host.UseCustomSerilog(builder.Configuration);
-
-//***************** ADICIONAR **************************************************/
-//builder.AddCustomLoggingTelemetry()
-//********************************************************************************/
+builder.AddCustomLoggingTelemetry();
 
 // Register application, infrastructure and API services
 builder.Services.AddGameServices(builder);
@@ -18,9 +15,6 @@ builder.Services
     .AddElasticSearch(builder.Configuration);
 
 var app = builder.Build();
-
-// Note: In Elasticsearch Cloud, indices are created automatically on first document insertion
-// No manual index initialization is required
 
 if (!builder.Environment.IsEnvironment("Testing"))
 {

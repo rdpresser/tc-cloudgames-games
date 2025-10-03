@@ -9,8 +9,8 @@
         public const string Version = "1.0.0";
 
         // Service Identity - Centralized for consistency (matches Docker Compose)
-        public const string ServiceName = "tccloudgames-game-app";
-        public const string ServiceNamespace = "tccloudgames-app-group";
+        public const string ServiceName = "tccloudgames-games";
+        public const string ServiceNamespace = "tccloudgames";
 
         // Meter Names for OpenTelemetry Metrics
         public const string GamesMeterName = "TC.CloudGames.Games.Api.Metrics";
@@ -25,16 +25,22 @@
 
         // Tag Names (using underscores for consistency with Loki labels)
         public const string ServiceComponent = "service.component";
+        public const string GameType = "game_type";
         public const string UserId = "user_id";
+        public const string GameId = "game_id";
+        public const string GameDifficulty = "game_difficulty";
+        public const string GameStatus = "game_status";
         public const string UserAction = "user_action";
         public const string SessionId = "session_id";
         public const string ErrorType = "error_type";
 
         // Default Values
+        public const string DefaultDifficulty = "normal";
+        public const string DefaultGameType = "unknown";
         public const string AnonymousUser = "anonymous";
 
         // Service Components
-        public const string UserComponent = "user";
+        public const string GameComponent = "game";
         public const string DatabaseComponent = "database";
         public const string CacheComponent = "cache";
 
@@ -60,8 +66,8 @@
             var otlpEndpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT");
             var otlpHeaders = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_HEADERS");
             var otlpProtocol = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_PROTOCOL");
-            var grafanaApiToken = Environment.GetEnvironmentVariable("GRAFANA_API_TOKEN");
-            var grafanaPrometheusToken = Environment.GetEnvironmentVariable("GRAFANA_PROMETHEUS_TOKEN");
+            var grafanaApiToken = Environment.GetEnvironmentVariable("GRAFANA_LOGS_API_TOKEN");
+            var grafanaPrometheusToken = Environment.GetEnvironmentVariable("GRAFANA_OTEL_PROMETHEUS_API_TOKEN");
 
             logger.LogInformation("OTLP Endpoint: {OtlpEndpoint}", string.IsNullOrEmpty(otlpEndpoint) ? "NOT SET" : otlpEndpoint);
             logger.LogInformation("OTLP Headers: {OtlpHeaders}", string.IsNullOrEmpty(otlpHeaders) ? "NOT SET" : "***CONFIGURED***");

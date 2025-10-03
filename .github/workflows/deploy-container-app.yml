@@ -270,6 +270,15 @@ jobs:
               "elasticsearch-game-projectid=keyvaultref:https://$KEY_VAULT_NAME.vault.azure.net/secrets/elasticsearch-game-projectid,identityref:system" \
               "elasticsearch-game-indexprefix=keyvaultref:https://$KEY_VAULT_NAME.vault.azure.net/secrets/elasticsearch-game-indexprefix,identityref:system"
 
+          # Grafana OpenTelemetry secrets
+          az containerapp secret set --name "$CONTAINER_APP_NAME" --resource-group "$RESOURCE_GROUP" \
+            --secrets \
+              "grafana-logs-api-token=keyvaultref:https://$KEY_VAULT_NAME.vault.azure.net/secrets/grafana-logs-api-token,identityref:system" \
+              "grafana-otel-prometheus-api-token=keyvaultref:https://$KEY_VAULT_NAME.vault.azure.net/secrets/grafana-otel-prometheus-api-token,identityref:system" \
+              "grafana-otel-games-resource-attributes=keyvaultref:https://$KEY_VAULT_NAME.vault.azure.net/secrets/grafana-otel-games-resource-attributes,identityref:system" \
+              "grafana-otel-exporter-endpoint=keyvaultref:https://$KEY_VAULT_NAME.vault.azure.net/secrets/grafana-otel-exporter-endpoint,identityref:system" \
+              "grafana-otel-exporter-protocol=keyvaultref:https://$KEY_VAULT_NAME.vault.azure.net/secrets/grafana-otel-exporter-protocol,identityref:system" \
+              "grafana-otel-auth-header=keyvaultref:https://$KEY_VAULT_NAME.vault.azure.net/secrets/grafana-otel-auth-header,identityref:system"
 
           echo "✅ Container App secrets setup completed!"
         shell: bash
@@ -319,7 +328,13 @@ jobs:
               ELASTICSEARCH_ENDPOINTURL=secretref:elasticsearch-game-endpoint \
               ELASTICSEARCH_APIKEY=secretref:elasticsearch-game-apikey \
               ELASTICSEARCH_PROJECTID=secretref:elasticsearch-game-projectid \
-              ELASTICSEARCH_INDEXPREFIX=secretref:elasticsearch-game-indexprefix
+              ELASTICSEARCH_INDEXPREFIX=secretref:elasticsearch-game-indexprefix \
+              GRAFANA_LOGS_API_TOKEN=secretref:grafana-logs-api-token \
+              GRAFANA_OTEL_PROMETHEUS_API_TOKEN=secretref:grafana-otel-prometheus-api-token \
+              OTEL_RESOURCE_ATTRIBUTES=secretref:grafana-otel-games-resource-attributes \
+              OTEL_EXPORTER_OTLP_ENDPOINT=secretref:grafana-otel-exporter-endpoint \
+              OTEL_EXPORTER_OTLP_PROTOCOL=secretref:grafana-otel-exporter-protocol \
+              OTEL_EXPORTER_OTLP_HEADERS=secretref:grafana-otel-auth-header
 
           echo "✅ Container App deployment completed successfully!"
           echo "🔍 Checking deployment status..."

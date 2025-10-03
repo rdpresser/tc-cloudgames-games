@@ -102,6 +102,7 @@ namespace TC.CloudGames.Games.Domain.Aggregates.UserGameLibrary
             PurchaseDate = @event.PurchaseDate;
             ErrorMessage = null;
             SetCreatedAt(@event.OccurredOn);
+            SetActivate();
             SetUpdatedAt(null);
         }
 
