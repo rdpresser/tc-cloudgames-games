@@ -5,7 +5,7 @@ The Games microservice is responsible for managing the game catalog, user game l
 ## 🏗️ Architecture Overview
 
 This service follows **Hexagonal Architecture (Ports & Adapters)** with **Domain-Driven Design (DDD)** principles:
-
+```
 TC.CloudGames.Games/
 ├── 🎯 Core/ # Business Logic
 │ ├── Domain/ # Domain Layer
@@ -24,7 +24,7 @@ TC.CloudGames.Games/
 │ └── TC.CloudGames.Games.Search/ # Elasticsearch Integration
 └── 🧪 test/ # Unit & Integration Tests
 └── TC.CloudGames.Games.Unit.Tests/
-
+```
 ## 🎯 Domain Model
 
 ### Core Aggregates
