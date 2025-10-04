@@ -1,8 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
-using TC.CloudGames.Games.Infrastructure.Elasticsearch;
-using TC.CloudGames.SharedKernel.Infrastructure.Snapshots.Users;
-
-namespace TC.CloudGames.Games.Infrastructure
+﻿namespace TC.CloudGames.Games.Infrastructure
 {
     [ExcludeFromCodeCoverage]
     public static class DependencyInjection
@@ -30,10 +26,9 @@ namespace TC.CloudGames.Games.Infrastructure
 
             // Register Elasticsearch client provider and client
             services.AddSingleton<IElasticsearchClientProvider, ElasticsearchClientProvider>();
-            ////services.AddSingleton(sp => sp.GetRequiredService<IElasticsearchClientProvider>().Client);
 
             // Register ElasticSearchOptions for direct injection
-            ////services.AddSingleton(sp => sp.GetRequiredService<IOptions<ElasticSearchOptions>>().Value);
+            services.AddSingleton(sp => sp.GetRequiredService<IOptions<ElasticSearchOptions>>().Value);
 
             // Register search services
             services.AddScoped<IGameElasticsearchService, GameElasticsearchService>();
