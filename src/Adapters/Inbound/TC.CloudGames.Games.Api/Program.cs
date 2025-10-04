@@ -21,6 +21,10 @@ if (!builder.Environment.IsEnvironment("Testing"))
     await app.CreateMessageDatabase().ConfigureAwait(false);
 }
 
+// Get logger instance for Program and log telemetry configuration
+var logger = app.Services.GetRequiredService<ILogger<TC.CloudGames.Games.Api.Program>>();
+TelemetryConstants.LogTelemetryConfiguration(logger);
+
 // Use metrics authentication middleware extension
 app.UseMetricsAuthentication();
 

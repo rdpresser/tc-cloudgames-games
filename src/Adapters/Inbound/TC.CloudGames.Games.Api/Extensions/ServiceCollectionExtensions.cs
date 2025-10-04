@@ -248,7 +248,7 @@ namespace TC.CloudGames.Games.Api.Extensions
                 {
                     s.Title = "TC.CloudGames API";
                     s.Version = "v1";
-                    s.Description = "API for TC.CloudGames";
+                    s.Description = "Game API for TC.CloudGames";
                     s.MarkNonNullablePropsAsRequired();
                 };
 
