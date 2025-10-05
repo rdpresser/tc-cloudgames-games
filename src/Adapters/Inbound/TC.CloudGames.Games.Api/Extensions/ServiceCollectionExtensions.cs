@@ -420,13 +420,28 @@ namespace TC.CloudGames.Games.Api.Extensions
                         var topicName = $"{sb.TopicName}-topic";
                         opts.PublishMessage<EventContext<GameCreatedIntegrationEvent>>()
                             .ToAzureServiceBusTopic(topicName)
-                            .CustomizeOutgoing(e => e.Headers["DomainAggregate"] = "GameAggregate")
+                            .CustomizeOutgoing(e =>
+                            {
+                                e.Headers["DomainAggregate"] = "GameAggregate";
+                            })
+                            .BufferedInMemory()
+                            .UseDurableOutbox();
+
+                        opts.PublishMessage<GamePurchasePaymentApprovedFunctionEvent>()
+                            .ToAzureServiceBusTopic(topicName)
+                            .CustomizeOutgoing(e =>
+                            {
+                                e.Headers["DomainAggregate"] = "GameAggregate";
+                            })
                             .BufferedInMemory()
                             .UseDurableOutbox();
 
                         opts.PublishMessage<EventContext<GamePurchasedIntegrationEvent>>()
                             .ToAzureServiceBusTopic(topicName)
-                            .CustomizeOutgoing(e => e.Headers["DomainAggregate"] = "GameAggregate")
+                            .CustomizeOutgoing(e =>
+                            {
+                                e.Headers["DomainAggregate"] = "GameAggregate";
+                            })
                             .BufferedInMemory()
                             .UseDurableOutbox();
 
