@@ -398,11 +398,6 @@ public sealed record UserGameLibraryProjection
 # Run all tests
 dotnet test
 
-# Run specific test categories
-dotnet test --filter Category=Unit
-dotnet test --filter Category=Integration
-dotnet test --filter Category=Api
-
 # Run with coverage
 dotnet test --collect:"XPlat Code Coverage"
 ```
@@ -499,13 +494,7 @@ dotnet run
 ### Swagger/OpenAPI
 The service exposes comprehensive API documentation at:
 - **Development**: `https://localhost:5002/swagger`
-- **Staging**: `https://games-staging.tccloudgames.com/swagger`
 - **Production**: `https://games.tccloudgames.com/swagger`
-
-### Postman Collection
-Import the provided Postman collection for easy API testing:
-- **Collection**: `TC.CloudGames.Games.Api.postman_collection.json`
-- **Environment**: `TC.CloudGames.Development.postman_environment.json`
 
 ## 🤝 Contributing
 
