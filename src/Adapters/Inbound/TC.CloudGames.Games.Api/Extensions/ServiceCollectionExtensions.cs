@@ -1,13 +1,4 @@
-﻿using Marten.Events.Projections;
-using Npgsql;
-using OpenTelemetry.Logs;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
-using TC.CloudGames.Games.Application.Abstractions.Projections;
-using TC.CloudGames.Games.Domain.Aggregates.UserGameLibrary;
-
-namespace TC.CloudGames.Games.Api.Extensions
+﻿namespace TC.CloudGames.Games.Api.Extensions
 {
     internal static class ServiceCollectionExtensions
     {
@@ -82,6 +73,8 @@ namespace TC.CloudGames.Games.Api.Extensions
             var serviceVersion = typeof(Program).Assembly.GetName().Version?.ToString() ?? TelemetryConstants.Version;
             var environment = configuration["ASPNETCORE_ENVIRONMENT"] ?? "Development";
             var instanceId = Environment.MachineName;
+            var otlpEndpoint = configuration["OTEL_EXPORTER_OTLP_ENDPOINT"];
+            var otlpHeaders = configuration["OTEL_EXPORTER_OTLP_HEADERS"];
 
             services.AddOpenTelemetry()
                 .ConfigureResource(resource => resource
@@ -103,20 +96,31 @@ namespace TC.CloudGames.Games.Api.Extensions
                         .AddAspNetCoreInstrumentation()
                         .AddHttpClientInstrumentation()
                         .AddRuntimeInstrumentation() // CPU, Memory, GC metrics
-                        .AddFusionCacheInstrumentation()
                         .AddNpgsqlInstrumentation()
-                        // Built-in meters for system metrics
+                        .AddFusionCacheInstrumentation()
+                        // Custom meters (app + Wolverine + Marten)
+                        .AddMeter("System.Runtime")
                         .AddMeter("Microsoft.AspNetCore.Hosting")
                         .AddMeter("Microsoft.AspNetCore.Server.Kestrel")
                         .AddMeter("System.Net.Http")
-                        .AddMeter("System.Runtime") // .NET runtime metrics
-                                                    // Custom application meters
                         .AddMeter("Wolverine")
                         .AddMeter("Marten")
-                        .AddMeter(TelemetryConstants.GamesMeterName) // Custom game metrics
-                                                                     // Export to both OTLP (Grafana Cloud) and Prometheus endpoint
-                        .AddOtlpExporter()
-                        .AddPrometheusExporter()) // Prometheus scraping endpoint
+                        .AddMeter(TelemetryConstants.GamesMeterName)
+                        // Exporters
+                        .AddPrometheusExporter()
+                        .AddOtlpExporter(opt =>
+                        {
+                            opt.Protocol = OtlpExportProtocol.Grpc;
+                            opt.Endpoint = new Uri(otlpEndpoint ?? "");
+                            opt.Headers = otlpHeaders ?? "";
+                            opt.ExportProcessorType = ExportProcessorType.Batch;
+                            opt.BatchExportProcessorOptions = new BatchExportProcessorOptions<Activity>
+                            {
+                                MaxQueueSize = 2048,
+                                ScheduledDelayMilliseconds = 5000,
+                                ExporterTimeoutMilliseconds = 3000
+                            };
+                        }))
                 .WithTracing(tracingBuilder =>
                     tracingBuilder
                         .AddHttpClientInstrumentation(options =>
@@ -183,15 +187,36 @@ namespace TC.CloudGames.Games.Api.Extensions
                                 activity.SetTag("exception.stacktrace", exception.StackTrace);
                             };
                         })
-                        .AddFusionCacheInstrumentation()
                         .AddNpgsql()
+                        //.AddFusionCacheInstrumentation()
                         .AddRedisInstrumentation()
                         .AddSource(TelemetryConstants.GameActivitySource)
                         .AddSource(TelemetryConstants.DatabaseActivitySource)
                         .AddSource(TelemetryConstants.CacheActivitySource)
-                        .AddSource("Wolverine")
-                        .AddSource("Marten")
-                        .AddOtlpExporter());
+                        // Important: filter out internal sources that cause 503s
+                        .SetSampler(new AlwaysOnSampler())
+                        .AddProcessor(new FilteringActivityProcessor(activity =>
+                            !activity.Source.Name.StartsWith("Azure.") &&
+                            !activity.Source.Name.StartsWith("Wolverine") &&
+                            !activity.Source.Name.StartsWith("Marten") &&
+                            !activity.DisplayName.Contains("ServiceBus")))
+                        ////.AddSource("Wolverine")
+                        ////.AddSource("Marten")
+                        // OTLP Exporter in batch, async, non-blocking
+                        .AddOtlpExporter(opt =>
+                        {
+                            opt.Protocol = OtlpExportProtocol.Grpc;
+                            opt.Endpoint = new Uri(otlpEndpoint ?? "");
+                            opt.Headers = otlpHeaders ?? "";
+                            opt.ExportProcessorType = ExportProcessorType.Batch;
+                            opt.BatchExportProcessorOptions = new BatchExportProcessorOptions<Activity>
+                            {
+                                MaxQueueSize = 2048,
+                                ScheduledDelayMilliseconds = 5000,
+                                ExporterTimeoutMilliseconds = 3000
+                            };
+                        }));
+
 
             // Register custom metrics classes
             services.AddSingleton<GameMetrics>();
@@ -296,6 +321,16 @@ namespace TC.CloudGames.Games.Api.Extensions
                 // -------------------------------
                 const string wolverineSchema = "wolverine";
                 opts.Durability.MessageStorageSchemaName = wolverineSchema;
+
+                // -------------------------------
+                // Persist Wolverine messages in Postgres using the same schema
+                // -------------------------------
+                opts.PersistMessagesWithPostgresql(
+                        PostgresHelper.Build(builder.Configuration).ConnectionString,
+                        wolverineSchema
+                    );
+
+                opts.Policies.OnException<Exception>().RetryTimes(5);
 
                 // -------------------------------
                 // Enable durable local queues and auto transaction application
@@ -425,7 +460,12 @@ namespace TC.CloudGames.Games.Api.Extensions
                                 e.Headers["DomainAggregate"] = "GameAggregate";
                             })
                             .BufferedInMemory()
-                            .UseDurableOutbox();
+                            .UseDurableOutbox()
+                            .CircuitBreaking(configure =>
+                            {
+                                configure.FailuresBeforeCircuitBreaks = 5;
+                                configure.MaximumEnvelopeRetryStorage = 10;
+                            });
 
                         opts.PublishMessage<GamePurchasePaymentApprovedFunctionEvent>()
                             .ToAzureServiceBusTopic(topicName)
@@ -434,7 +474,12 @@ namespace TC.CloudGames.Games.Api.Extensions
                                 e.Headers["DomainAggregate"] = "GameAggregate";
                             })
                             .BufferedInMemory()
-                            .UseDurableOutbox();
+                            .UseDurableOutbox()
+                            .CircuitBreaking(configure =>
+                            {
+                                configure.FailuresBeforeCircuitBreaks = 5;
+                                configure.MaximumEnvelopeRetryStorage = 10;
+                            });
 
                         opts.PublishMessage<EventContext<GamePurchasedIntegrationEvent>>()
                             .ToAzureServiceBusTopic(topicName)
@@ -443,7 +488,12 @@ namespace TC.CloudGames.Games.Api.Extensions
                                 e.Headers["DomainAggregate"] = "GameAggregate";
                             })
                             .BufferedInMemory()
-                            .UseDurableOutbox();
+                            .UseDurableOutbox()
+                            .CircuitBreaking(configure =>
+                            {
+                                configure.FailuresBeforeCircuitBreaks = 5;
+                                configure.MaximumEnvelopeRetryStorage = 10;
+                            });
 
                         #region Games API EVENTS
                         ////opts.PublishMessage<EventContext<GameBasicInfoUpdatedIntegrationEvent>>()
@@ -529,14 +579,6 @@ namespace TC.CloudGames.Games.Api.Extensions
 
                         break;
                 }
-
-                // -------------------------------
-                // Persist Wolverine messages in Postgres using the same schema
-                // -------------------------------
-                opts.PersistMessagesWithPostgresql(
-                        PostgresHelper.Build(builder.Configuration).ConnectionString,
-                        wolverineSchema
-                    );
             })
             .ConfigureLogging(configureLogging: config =>
             {
@@ -730,4 +772,26 @@ namespace TC.CloudGames.Games.Api.Extensions
             return services;
         }
     }
+
+    /// <summary>
+    /// Processor to ignore noisy or unsafe activities.
+    /// </summary>
+    public class FilteringActivityProcessor : BaseProcessor<Activity>
+    {
+        private readonly Func<Activity, bool> _filter;
+
+        public FilteringActivityProcessor(Func<Activity, bool> filter)
+        {
+            _filter = filter;
+        }
+
+        public override void OnEnd(Activity data)
+        {
+            if (_filter(data))
+            {
+                base.OnEnd(data);
+            }
+        }
+    }
 }
+
