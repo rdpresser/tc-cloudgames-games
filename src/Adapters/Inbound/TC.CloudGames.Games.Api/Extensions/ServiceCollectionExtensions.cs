@@ -94,28 +94,21 @@
                         .AddAspNetCoreInstrumentation()
                         .AddHttpClientInstrumentation()
                         .AddRuntimeInstrumentation() // CPU, Memory, GC metrics
-                        .AddNpgsqlInstrumentation()
                         .AddFusionCacheInstrumentation()
+                        .AddNpgsqlInstrumentation()
                         // Custom meters (app + Wolverine + Marten)
-                        .AddMeter("System.Runtime")
                         .AddMeter("Microsoft.AspNetCore.Hosting")
                         .AddMeter("Microsoft.AspNetCore.Server.Kestrel")
                         .AddMeter("System.Net.Http")
+                        .AddMeter("System.Runtime")
+                        // Custom application meters
                         .AddMeter("Wolverine")
                         .AddMeter("Marten")
                         .AddMeter(TelemetryConstants.GamesMeterName)
                         // Exporters
+                        .AddOtlpExporter()
                         .AddPrometheusExporter()
-                        .AddOtlpExporter(opt =>
-                        {
-                            opt.ExportProcessorType = ExportProcessorType.Batch;
-                            opt.BatchExportProcessorOptions = new BatchExportProcessorOptions<Activity>
-                            {
-                                MaxQueueSize = 2048,
-                                ScheduledDelayMilliseconds = 5000,
-                                ExporterTimeoutMilliseconds = 3000
-                            };
-                        }))
+                    )
                 .WithTracing(tracingBuilder =>
                     tracingBuilder
                         .AddHttpClientInstrumentation(options =>
@@ -182,32 +175,16 @@
                                 activity.SetTag("exception.stacktrace", exception.StackTrace);
                             };
                         })
+                        .AddFusionCacheInstrumentation()
                         .AddNpgsql()
-                        //.AddFusionCacheInstrumentation()
-                        .AddRedisInstrumentation()
+                        //.AddRedisInstrumentation()
                         .AddSource(TelemetryConstants.GameActivitySource)
                         .AddSource(TelemetryConstants.DatabaseActivitySource)
                         .AddSource(TelemetryConstants.CacheActivitySource)
-                        // Important: filter out internal sources that cause 503s
-                        .SetSampler(new AlwaysOnSampler())
-                        .AddProcessor(new FilteringActivityProcessor(activity =>
-                            !activity.Source.Name.StartsWith("Azure.") &&
-                            !activity.Source.Name.StartsWith("Wolverine") &&
-                            !activity.Source.Name.StartsWith("Marten") &&
-                            !activity.DisplayName.Contains("ServiceBus")))
-                        ////.AddSource("Wolverine")
-                        ////.AddSource("Marten")
-                        // OTLP Exporter in batch, async, non-blocking
-                        .AddOtlpExporter(opt =>
-                        {
-                            opt.ExportProcessorType = ExportProcessorType.Batch;
-                            opt.BatchExportProcessorOptions = new BatchExportProcessorOptions<Activity>
-                            {
-                                MaxQueueSize = 2048,
-                                ScheduledDelayMilliseconds = 5000,
-                                ExporterTimeoutMilliseconds = 3000
-                            };
-                        }));
+                        //.AddSource("Wolverine")
+                        //.AddSource("Marten")
+                        .AddOtlpExporter()
+                    );
 
 
             // Register custom metrics classes
@@ -263,7 +240,7 @@
             {
                 o.DocumentSettings = s =>
                 {
-                    s.Title = "TC.CloudGames API";
+                    s.Title = "TC.CloudGames.Games API";
                     s.Version = "v1";
                     s.Description = "Game API for TC.CloudGames";
                     s.MarkNonNullablePropsAsRequired();
@@ -305,7 +282,7 @@
             builder.Host.UseWolverine(opts =>
             {
                 opts.UseSystemTextJsonForSerialization();
-                opts.ApplicationAssembly = typeof(Program).Assembly;
+                ////opts.ApplicationAssembly = typeof(Program).Assembly;
                 opts.Discovery.IncludeAssembly(typeof(UserSnapshotProjectionHandler).Assembly);
 
                 // -------------------------------
@@ -323,7 +300,14 @@
                     );
 
                 ////opts.Policies.OnException<Exception>().RetryTimes(5);
-                opts.Policies.OnAnyException().RetryWithCooldown(TimeSpan.FromMilliseconds(200), TimeSpan.FromMilliseconds(400), TimeSpan.FromMilliseconds(600), TimeSpan.FromMilliseconds(800), TimeSpan.FromMilliseconds(1000));
+                opts.Policies.OnAnyException()
+                    .RetryWithCooldown(
+                        TimeSpan.FromMilliseconds(200),
+                        TimeSpan.FromMilliseconds(400),
+                        TimeSpan.FromMilliseconds(600),
+                        TimeSpan.FromMilliseconds(800),
+                        TimeSpan.FromMilliseconds(1000)
+                    );
 
                 // -------------------------------
                 // Enable durable local queues and auto transaction application
@@ -572,10 +556,6 @@
 
                         break;
                 }
-            })
-            .ConfigureLogging(configureLogging: config =>
-            {
-                config.AddDebug().AddConsole().SetMinimumLevel(LogLevel.Debug);
             });
 
             // -------------------------------
@@ -596,19 +576,6 @@
                 var options = new StoreOptions();
                 options.Connection(connProvider.ConnectionString);
                 options.Logger(new ConsoleMartenLogger());
-                options.OpenTelemetry.TrackConnections = Marten.Services.TrackLevel.Normal;
-                options.OpenTelemetry.TrackEventCounters();
-                options.OpenTelemetry.TrackEventCounters();
-
-                ////options.UseSystemTextJsonForSerialization(configure: cfg =>
-                ////{
-                ////    // Adicione aqui seus conversores
-                ////    ////cfg.Converters.Add(new RoleJsonConverter());
-
-                ////    // Configurações extras, se necessário
-                ////    ////cfg.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-                ////    ////cfg.WriteIndented = true;
-                ////});
 
                 options.Events.DatabaseSchemaName = "events";
                 options.DatabaseSchemaName = "documents";
@@ -765,26 +732,4 @@
             return services;
         }
     }
-
-    /// <summary>
-    /// Processor to ignore noisy or unsafe activities.
-    /// </summary>
-    public class FilteringActivityProcessor : BaseProcessor<Activity>
-    {
-        private readonly Func<Activity, bool> _filter;
-
-        public FilteringActivityProcessor(Func<Activity, bool> filter)
-        {
-            _filter = filter;
-        }
-
-        public override void OnEnd(Activity data)
-        {
-            if (_filter(data))
-            {
-                base.OnEnd(data);
-            }
-        }
-    }
 }
-
