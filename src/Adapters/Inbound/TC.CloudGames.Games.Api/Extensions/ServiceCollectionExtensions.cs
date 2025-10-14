@@ -412,9 +412,9 @@
                     case BrokerType.AzureServiceBus when broker.ServiceBusSettings is { } sb:
                         var azureOpts = opts.UseAzureServiceBus(sb.ConnectionString,
                             configure =>
-                        {
-                            configure.Identifier = typeof(Program).Assembly.FullName;
-                        });
+                            {
+                                configure.Identifier = typeof(Program).Assembly.GetName().Name;
+                            });
 
                         if (sb.AutoProvision) azureOpts.AutoProvision();
                         if (sb.AutoPurgeOnStartup) azureOpts.AutoPurgeOnStartup();
