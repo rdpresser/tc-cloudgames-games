@@ -57,8 +57,7 @@
         // Configures custom middlewares including HTTPS redirection, exception handling, correlation, logging, and health checks
         public static IApplicationBuilder UseCustomMiddlewares(this IApplicationBuilder app)
         {
-            app.UseHttpsRedirection()
-                .UseCustomExceptionHandler()
+            app.UseCustomExceptionHandler()
                 .UseCorrelationMiddleware()
                 .UseMiddleware<TelemetryMiddleware>() // Add telemetry middleware after correlation
                 .UseSerilogRequestLogging()
