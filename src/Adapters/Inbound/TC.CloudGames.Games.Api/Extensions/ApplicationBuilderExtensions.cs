@@ -59,11 +59,8 @@ namespace TC.CloudGames.Games.Api.Extensions
         // Configures custom middlewares including HTTPS redirection, exception handling, correlation, logging, and health checks
         public static IApplicationBuilder UseCustomMiddlewares(this IApplicationBuilder app)
         {
-            // Permite headers de proxy (importante no ACA)
-            app.UseForwardedHeaders(new ForwardedHeadersOptions
-            {
-                ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-            });
+            // Enables proxy headers (important for ACA)
+            app.UseForwardedHeaders(new ForwardedHeadersOptions { ForwardedHeaders = ForwardedHeaders.All });
 
             app.UseCustomExceptionHandler()
                 .UseCorrelationMiddleware()
