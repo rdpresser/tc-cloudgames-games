@@ -1,4 +1,6 @@
-﻿namespace TC.CloudGames.Games.Api.Extensions
+﻿using Microsoft.AspNetCore.HttpOverrides;
+
+namespace TC.CloudGames.Games.Api.Extensions
 {
     [ExcludeFromCodeCoverage]
     internal static class ApplicationBuilderExtensions
@@ -57,6 +59,9 @@
         // Configures custom middlewares including HTTPS redirection, exception handling, correlation, logging, and health checks
         public static IApplicationBuilder UseCustomMiddlewares(this IApplicationBuilder app)
         {
+            // Enables proxy headers (important for ACA)
+            app.UseForwardedHeaders(new ForwardedHeadersOptions { ForwardedHeaders = ForwardedHeaders.All });
+
             app.UseCustomExceptionHandler()
                 .UseCorrelationMiddleware()
                 .UseMiddleware<TelemetryMiddleware>() // Add telemetry middleware after correlation
@@ -78,7 +83,7 @@
                 })
                 // Add Prometheus metrics endpoint
                 .UseOpenTelemetryPrometheusScrapingEndpoint("/metrics");
-            
+
             return app;
         }
 
