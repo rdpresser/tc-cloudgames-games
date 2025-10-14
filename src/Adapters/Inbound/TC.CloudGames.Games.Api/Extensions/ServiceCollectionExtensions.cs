@@ -282,14 +282,14 @@
             builder.Host.UseWolverine(opts =>
             {
                 opts.UseSystemTextJsonForSerialization();
-                ////opts.ApplicationAssembly = typeof(Program).Assembly;
+                opts.ApplicationAssembly = typeof(Program).Assembly;
                 opts.Discovery.IncludeAssembly(typeof(UserSnapshotProjectionHandler).Assembly);
-
                 // -------------------------------
                 // Define schema for Wolverine durability and Postgres persistence
                 // -------------------------------
                 const string wolverineSchema = "wolverine";
                 opts.Durability.MessageStorageSchemaName = wolverineSchema;
+                opts.ServiceName = "tccloudgames";
 
                 // -------------------------------
                 // Persist Wolverine messages in Postgres using the same schema
@@ -419,6 +419,7 @@
                         // Durable outbox for all sending endpoints
                         opts.Policies.UseDurableOutboxOnAllSendingEndpoints();
                         opts.Policies.UseDurableInboxOnAllListeners();
+                        opts.Durability.DurabilityAgentEnabled = true;
 
                         // PAYMENTS API EVENTS -------------------------------
                         opts.RegisterPaymentEvents();
