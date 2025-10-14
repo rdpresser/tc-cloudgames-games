@@ -353,7 +353,6 @@ jobs:
             --image "$IMAGE_URI" \
             --set-env-vars \
               ASPNETCORE_ENVIRONMENT=Production \
-              ASPNETCORE_URLS=http://+:8080 \
               DB_HOST=secretref:db-host \
               DB_PORT=secretref:db-port \
               DB_NAME=secretref:db-name-games \
