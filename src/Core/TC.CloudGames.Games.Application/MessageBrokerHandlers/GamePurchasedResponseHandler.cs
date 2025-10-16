@@ -1,6 +1,6 @@
 ﻿namespace TC.CloudGames.Games.Application.MessageBrokerHandlers
 {
-    public class GamePurchasedResponseHandler
+    public class GamePurchasedResponseHandler : IWolverineHandler
     {
         private readonly IUserGameLibraryRepository _repository;
         private readonly IUserSnapshotStore _userSnapshotStore;
