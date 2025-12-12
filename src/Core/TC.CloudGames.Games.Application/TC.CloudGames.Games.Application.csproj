@@ -17,9 +17,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="FastEndpoints" Version="7.0.1" />
-    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0" />
-    <PackageReference Include="Polly" Version="8.6.4" />
+    <PackageReference Include="FastEndpoints" Version="7.1.1" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+    <PackageReference Include="Polly" Version="8.6.5" />
   </ItemGroup>
 
 </Project>
