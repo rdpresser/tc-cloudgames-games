@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <PackageReference Include="Marten" Version="8.16.4" />
+    <PackageReference Include="Marten" Version="8.17.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.10" />
   </ItemGroup>
   
@@ -10,5 +10,5 @@
     <ProjectReference Include="..\..\..\Core\TC.CloudGames.Games.Application\TC.CloudGames.Games.Application.csproj" />
     <ProjectReference Include="..\..\..\Core\TC.CloudGames.Games.Domain\TC.CloudGames.Games.Domain.csproj" />
   </ItemGroup>
-
+  
 </Project>
