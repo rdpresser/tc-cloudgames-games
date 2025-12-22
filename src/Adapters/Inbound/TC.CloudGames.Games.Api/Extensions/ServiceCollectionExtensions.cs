@@ -1,4 +1,6 @@
-﻿namespace TC.CloudGames.Games.Api.Extensions
+﻿using TC.CloudGames.SharedKernel.Infrastructure.Telemetry;
+
+namespace TC.CloudGames.Games.Api.Extensions
 {
     internal static class ServiceCollectionExtensions
     {
@@ -22,7 +24,7 @@
                 .AddCustomFastEndpoints()
                 .ConfigureAppSettings(builder.Configuration)
                 .AddCustomHealthCheck()
-                .AddCustomOpenTelemetry(builder.Configuration);
+                .AddCustomOpenTelemetry(builder, builder.Configuration);
 
             return services;
         }
@@ -40,39 +42,55 @@
             };
         }
 
-        public static WebApplicationBuilder AddCustomLoggingTelemetry(this WebApplicationBuilder builder)
+        private static IHostApplicationBuilder AddOpenTelemetryExporters(this IHostApplicationBuilder builder)
         {
-            builder.Logging.ClearProviders();
+            var useOtlpExporter = !string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
 
-            builder.Logging.AddOpenTelemetry(options =>
+            var grafanaSettings = GrafanaHelper.Build(builder.Configuration);
+
+            if (grafanaSettings.Agent.Enabled && useOtlpExporter)
             {
-                options.IncludeScopes = true;
-                options.IncludeFormattedMessage = true;
-
-                // Enhanced resource configuration for logs using centralized constants
-                options.SetResourceBuilder(
-                    ResourceBuilder.CreateDefault()
-                        .AddService(TelemetryConstants.ServiceName,
-                                   serviceVersion: typeof(Program).Assembly.GetName().Version?.ToString() ?? TelemetryConstants.Version)
-                        .AddAttributes(new Dictionary<string, object>
+                builder.Services.AddOpenTelemetry()
+                    .WithTracing(tracing =>
+                    {
+                        tracing.AddOtlpExporter(otlp =>
                         {
-                            ["deployment.environment"] = (builder.Configuration["ASPNETCORE_ENVIRONMENT"] ?? "Development").ToLowerInvariant(),
-                            ["service.namespace"] = TelemetryConstants.ServiceNamespace.ToLowerInvariant(),
-                            ["cloud.provider"] = "azure",
-                            ["cloud.platform"] = "azure_container_apps"
-                        }));
+                            otlp.Endpoint = new Uri(grafanaSettings.Otlp.Endpoint);
+                            otlp.Protocol = grafanaSettings.Otlp.Protocol.ToLowerInvariant() == "grpc"
+                                ? OpenTelemetry.Exporter.OtlpExportProtocol.Grpc
+                                : OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
 
-                options.AddOtlpExporter();
-            });
+                            if (!string.IsNullOrWhiteSpace(grafanaSettings.Otlp.Headers))
+                            {
+                                otlp.Headers = grafanaSettings.Otlp.Headers;
+                            }
+
+                            otlp.TimeoutMilliseconds = grafanaSettings.Otlp.TimeoutSeconds * 1000;
+                        });
+                    });
+
+                Console.WriteLine($"[INFO] OTLP Exporter configured - Endpoint: {grafanaSettings.Otlp.Endpoint}, Protocol: {grafanaSettings.Otlp.Protocol}");
+            }
+            else
+            {
+                Console.WriteLine("[WARN] Grafana Agent is DISABLED - Traces will be generated but NOT exported.");
+                Console.WriteLine("[WARN] To enable: Set Grafana:Agent:Enabled=true or GRAFANA_AGENT_ENABLED=true");
+            }
 
             return builder;
         }
 
-        public static IServiceCollection AddCustomOpenTelemetry(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddCustomOpenTelemetry(this IServiceCollection services, IHostApplicationBuilder builder, IConfiguration configuration)
         {
             var serviceVersion = typeof(Program).Assembly.GetName().Version?.ToString() ?? TelemetryConstants.Version;
             var environment = configuration["ASPNETCORE_ENVIRONMENT"] ?? "Development";
             var instanceId = Environment.MachineName;
+
+            builder.Logging.AddOpenTelemetry(logging =>
+            {
+                logging.IncludeFormattedMessage = true;
+                logging.IncludeScopes = true;
+            });
 
             services.AddOpenTelemetry()
                 .ConfigureResource(resource => resource
@@ -106,7 +124,6 @@
                         .AddMeter("Marten")
                         .AddMeter(TelemetryConstants.GamesMeterName)
                         // Exporters
-                        .AddOtlpExporter()
                         .AddPrometheusExporter()
                     )
                 .WithTracing(tracingBuilder =>
@@ -181,11 +198,11 @@
                         .AddSource(TelemetryConstants.GameActivitySource)
                         .AddSource(TelemetryConstants.DatabaseActivitySource)
                         .AddSource(TelemetryConstants.CacheActivitySource)
-                        //.AddSource("Wolverine")
-                        //.AddSource("Marten")
-                        .AddOtlpExporter()
+                    //.AddSource("Wolverine")
+                    //.AddSource("Marten")
                     );
 
+            builder.AddOpenTelemetryExporters();
 
             // Register custom metrics classes
             services.AddSingleton<GameMetrics>();

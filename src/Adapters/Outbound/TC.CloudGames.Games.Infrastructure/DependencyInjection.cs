@@ -19,19 +19,32 @@
             return services;
         }
 
-        public static IServiceCollection AddElasticSearch(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddElasticSearch(this IServiceCollection services, IConfiguration configuration, ILogger? logger = null)
         {
-            // Configure Elasticsearch options
-            services.Configure<ElasticSearchOptions>(configuration.GetSection("Elasticsearch"));
+            // Check feature flag for Elasticsearch
+            var isElasticsearchEnabled = configuration.GetValue<bool>("FeatureFlags:ElasticsearchEnabled", true);
 
-            // Register Elasticsearch client provider and client
-            services.AddSingleton<IElasticsearchClientProvider, ElasticsearchClientProvider>();
+            // Log feature flag status
+            logger?.LogInformation("🔧 Elasticsearch Feature Flag: {Status}", isElasticsearchEnabled ? "ENABLED" : "DISABLED");
 
-            // Register ElasticSearchOptions for direct injection
-            services.AddSingleton(sp => sp.GetRequiredService<IOptions<ElasticSearchOptions>>().Value);
+            if (isElasticsearchEnabled)
+            {
+                // Configure real Elasticsearch services
+                services.Configure<ElasticSearchOptions>(configuration.GetSection("Elasticsearch"));
+                services.AddSingleton<IElasticsearchClientProvider, ElasticsearchClientProvider>();
+                services.AddSingleton(sp => sp.GetRequiredService<IOptions<ElasticSearchOptions>>().Value);
+                services.AddScoped<IGameElasticsearchService, GameElasticsearchService>();
 
-            // Register search services
-            services.AddScoped<IGameElasticsearchService, GameElasticsearchService>();
+                logger?.LogInformation("✅ Elasticsearch is ENABLED - Real services registered");
+            }
+            else
+            {
+                // Configure fake Elasticsearch services
+                services.AddSingleton<IElasticsearchClientProvider, FakeElasticsearchClientProvider>();
+                services.AddScoped<IGameElasticsearchService, FakeGameElasticsearchService>();
+
+                logger?.LogWarning("⚠️ Elasticsearch is DISABLED - Fake services registered that will log operations");
+            }
 
             return services;
         }
