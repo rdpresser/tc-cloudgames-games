@@ -102,7 +102,7 @@ namespace TC.CloudGames.Games.Api.Extensions
                         ["service.instance.id"] = instanceId,
                         ["container.name"] = Environment.GetEnvironmentVariable("HOSTNAME") ?? instanceId,
                         ["cloud.provider"] = "azure",
-                        ["cloud.platform"] = "azure_container_apps",
+                        ["cloud.platform"] = "azure_kubernetes_service",
                         ["service.team"] = "engineering",
                         ["service.owner"] = "devops"
                     }))
