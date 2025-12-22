@@ -10,9 +10,19 @@ builder.AddCustomLoggingTelemetry();
 // Register application, infrastructure and API services
 builder.Services.AddGameServices(builder);
 builder.Services.AddApplication();
+
+// Create a temporary logger factory for infrastructure setup logging
+using var loggerFactory = LoggerFactory.Create(loggingBuilder =>
+{
+    loggingBuilder.AddConsole();
+    loggingBuilder.SetMinimumLevel(LogLevel.Information);
+});
+var setupLogger = loggerFactory.CreateLogger("Infrastructure.Setup");
+
+// Register infrastructure services including Elasticsearch
 builder.Services
     .AddInfrastructure()
-    .AddElasticSearch(builder.Configuration);
+    .AddElasticSearch(builder.Configuration, setupLogger);
 
 var app = builder.Build();
 

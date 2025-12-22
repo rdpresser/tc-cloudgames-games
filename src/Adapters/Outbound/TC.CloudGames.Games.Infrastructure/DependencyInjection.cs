@@ -19,12 +19,13 @@
             return services;
         }
 
-        public static IServiceCollection AddElasticSearch(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddElasticSearch(this IServiceCollection services, IConfiguration configuration, ILogger? logger = null)
         {
             // Check feature flag for Elasticsearch
             var isElasticsearchEnabled = configuration.GetValue<bool>("FeatureFlags:ElasticsearchEnabled", true);
 
-            Console.WriteLine($"🔧 Elasticsearch Feature Flag: {(isElasticsearchEnabled ? "ENABLED" : "DISABLED")}");
+            // Log feature flag status
+            logger?.LogInformation("🔧 Elasticsearch Feature Flag: {Status}", isElasticsearchEnabled ? "ENABLED" : "DISABLED");
 
             if (isElasticsearchEnabled)
             {
@@ -34,7 +35,7 @@
                 services.AddSingleton(sp => sp.GetRequiredService<IOptions<ElasticSearchOptions>>().Value);
                 services.AddScoped<IGameElasticsearchService, GameElasticsearchService>();
 
-                Console.WriteLine("✅ Elasticsearch is ENABLED - Real services registered");
+                logger?.LogInformation("✅ Elasticsearch is ENABLED - Real services registered");
             }
             else
             {
@@ -42,7 +43,7 @@
                 services.AddSingleton<IElasticsearchClientProvider, FakeElasticsearchClientProvider>();
                 services.AddScoped<IGameElasticsearchService, FakeGameElasticsearchService>();
 
-                Console.WriteLine("⚠️ Elasticsearch is DISABLED - Fake services registered that will log operations");
+                logger?.LogWarning("⚠️ Elasticsearch is DISABLED - Fake services registered that will log operations");
             }
 
             return services;
