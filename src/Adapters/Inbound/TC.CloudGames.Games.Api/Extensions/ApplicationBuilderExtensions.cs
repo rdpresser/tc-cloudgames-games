@@ -97,7 +97,7 @@ namespace TC.CloudGames.Games.Api.Extensions
                 ?? configuration["PathBase"]
                 ?? string.Empty;
 
-            // Enable OpenAPI with server modification - handles path base from X-Forwarded-Prefix or UsePathBase middleware
+            // Enable OpenAPI with server modification - handles path base from X-Forwarded-Prefix or UseIngressPathBase middleware
             app.UseOpenApi(o =>
             {
                 o.PostProcess = (doc, req) =>
@@ -124,7 +124,7 @@ namespace TC.CloudGames.Games.Api.Extensions
 
             // Enable Swagger UI with explicit swagger.json URL
             // The URL is always /swagger/v1/swagger.json relative to the application root
-            // PathBase middleware ensures it's accessible from the ingress path prefix
+            // The UseIngressPathBase middleware ensures it's accessible from the ingress path prefix
             app.UseSwaggerUi(c =>
             {
                 c.SwaggerRoutes.Clear();
