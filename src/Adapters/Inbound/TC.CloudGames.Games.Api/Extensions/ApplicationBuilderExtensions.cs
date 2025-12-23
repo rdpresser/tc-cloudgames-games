@@ -122,13 +122,15 @@ namespace TC.CloudGames.Games.Api.Extensions
                 };
             });
 
-            // Enable Swagger UI with explicit swagger.json URL
-            // The URL is always /swagger/v1/swagger.json relative to the application root
-            // The UseIngressPathBase middleware ensures it's accessible from the ingress path prefix
+            // Enable Swagger UI with dynamic swagger.json URL based on PathBase
+            // This ensures Swagger UI correctly loads the spec when behind an ingress with path prefix
             app.UseSwaggerUi(c =>
             {
                 c.SwaggerRoutes.Clear();
-                c.SwaggerRoutes.Add(new SwaggerUiRoute("v1", "/swagger/v1/swagger.json"));
+                // Use relative URL that works with any ingress path prefix
+                // Browser will resolve it relative to the current location
+                // Example: if on /games/swagger/ui, ./swagger/v1/swagger.json → /games/swagger/v1/swagger.json
+                c.SwaggerRoutes.Add(new SwaggerUiRoute("v1", "./swagger/v1/swagger.json"));
                 c.ConfigureDefaults();
             });
 
