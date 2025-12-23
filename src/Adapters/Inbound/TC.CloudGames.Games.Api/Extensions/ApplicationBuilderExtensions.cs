@@ -97,14 +97,18 @@ namespace TC.CloudGames.Games.Api.Extensions
                 ?? configuration["PathBase"]
                 ?? string.Empty;
 
-            // Enable OpenAPI with server modification - handles path base from X-Forwarded-Prefix or UseIngressPathBase middleware
+            // Build swagger.json URL - use relative path for better compatibility with ingress paths
+            // Relative path ensures it works regardless of the ingress path prefix
+            var swaggerJsonUrl = "./swagger/v1/swagger.json";
+
+            // Enable OpenAPI with dynamic server URL based on PathBase
             app.UseOpenApi(o =>
             {
                 o.PostProcess = (doc, req) =>
                 {
                     doc.Servers.Clear();
                     
-                    // Get the base path from the request context (set by UseIngressPathBase middleware)
+                    // Get the request PathBase (set by UseIngressPathBase middleware)
                     var requestPathBase = req.HttpContext.Request.PathBase.ToString();
                     
                     if (!string.IsNullOrWhiteSpace(requestPathBase))
@@ -122,13 +126,12 @@ namespace TC.CloudGames.Games.Api.Extensions
                 };
             });
 
-            // Enable Swagger UI with explicit swagger.json URL
-            // The URL is always /swagger/v1/swagger.json relative to the application root
-            // The UseIngressPathBase middleware ensures it's accessible from the ingress path prefix
+            // Enable Swagger UI with relative URL for compatibility with ingress path prefixes
+            // Relative URLs are resolved by the browser based on current location
             app.UseSwaggerUi(c =>
             {
                 c.SwaggerRoutes.Clear();
-                c.SwaggerRoutes.Add(new SwaggerUiRoute("v1", "/swagger/v1/swagger.json"));
+                c.SwaggerRoutes.Add(new SwaggerUiRoute("v1", swaggerJsonUrl));
                 c.ConfigureDefaults();
             });
 
