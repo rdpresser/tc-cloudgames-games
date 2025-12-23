@@ -88,10 +88,7 @@ namespace TC.CloudGames.Games.Api.Extensions
                     return problemDetails;
                 };
             })
-            .UseSwaggerGen(uiConfig: u =>
-            {
-                u.DocumentPath = "v1/swagger.json";
-            });
+            .UseSwaggerGen();
 
             return app;
         }

@@ -271,7 +271,8 @@ namespace TC.CloudGames.Games.Api.Extensions
                     // Add server with PathBase prefix for correct Swagger UI operation behind ingress
                     if (!string.IsNullOrWhiteSpace(pathBase))
                     {
-                        s.PostProcess = doc =>
+                        // Use PostProcess += to add our server modification after NSwag's default processing
+                        s.PostProcess += doc =>
                         {
                             doc.Servers.Clear();
                             doc.Servers.Add(new NSwag.OpenApiServer { Url = pathBase });
@@ -281,6 +282,9 @@ namespace TC.CloudGames.Games.Api.Extensions
 
                 o.RemoveEmptyRequestSchema = true;
                 o.NewtonsoftSettings = s => { s.Converters.Add(new StringEnumConverter()); };
+                
+                // Enable caching to ensure PostProcess is called once
+                o.EnableJWTBearerAuth = false;
             });
 
             return services;
