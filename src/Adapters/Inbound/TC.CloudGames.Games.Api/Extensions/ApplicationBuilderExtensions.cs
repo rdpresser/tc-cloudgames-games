@@ -97,29 +97,38 @@ namespace TC.CloudGames.Games.Api.Extensions
                 ?? configuration["PathBase"]
                 ?? string.Empty;
 
-            // Build swagger.json absolute path so ingress path prefix is preserved
-            var swaggerJsonUrl = string.IsNullOrWhiteSpace(pathBase)
-                ? "/swagger/v1/swagger.json"
-                : $"{pathBase}/swagger/v1/swagger.json";
-
-            // Enable OpenAPI with server modification
+            // Enable OpenAPI with server modification - handles path base from X-Forwarded-Prefix or UsePathBase middleware
             app.UseOpenApi(o =>
             {
-                if (!string.IsNullOrWhiteSpace(pathBase))
+                o.PostProcess = (doc, req) =>
                 {
-                    o.PostProcess = (doc, req) =>
+                    doc.Servers.Clear();
+                    
+                    // Get the base path from the request context (set by UseIngressPathBase middleware)
+                    var requestPathBase = req.HttpContext.Request.PathBase.ToString();
+                    
+                    if (!string.IsNullOrWhiteSpace(requestPathBase))
                     {
-                        doc.Servers.Clear();
+                        doc.Servers.Add(new NSwag.OpenApiServer { Url = requestPathBase });
+                    }
+                    else if (!string.IsNullOrWhiteSpace(pathBase))
+                    {
                         doc.Servers.Add(new NSwag.OpenApiServer { Url = pathBase });
-                    };
-                }
+                    }
+                    else
+                    {
+                        doc.Servers.Add(new NSwag.OpenApiServer { Url = "/" });
+                    }
+                };
             });
 
-            // Enable Swagger UI with explicit swagger.json URL including path base
+            // Enable Swagger UI with explicit swagger.json URL
+            // The URL is always /swagger/v1/swagger.json relative to the application root
+            // PathBase middleware ensures it's accessible from the ingress path prefix
             app.UseSwaggerUi(c =>
             {
                 c.SwaggerRoutes.Clear();
-                c.SwaggerRoutes.Add(new SwaggerUiRoute("v1", swaggerJsonUrl));
+                c.SwaggerRoutes.Add(new SwaggerUiRoute("v1", "/swagger/v1/swagger.json"));
                 c.ConfigureDefaults();
             });
 
