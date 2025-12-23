@@ -90,7 +90,7 @@ namespace TC.CloudGames.Games.Api.Extensions
             })
             .UseSwaggerGen(uiConfig: u =>
             {
-                u.DocumentPath = "swagger/v1/swagger.json";
+                u.DocumentPath = "v1/swagger.json";
             });
 
             return app;
