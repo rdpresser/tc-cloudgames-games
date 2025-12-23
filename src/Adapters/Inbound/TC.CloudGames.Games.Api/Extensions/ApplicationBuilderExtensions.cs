@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
+using NSwag;
+using NSwag.AspNetCore;
 
 namespace TC.CloudGames.Games.Api.Extensions
 {
@@ -95,6 +97,11 @@ namespace TC.CloudGames.Games.Api.Extensions
                 ?? configuration["PathBase"]
                 ?? string.Empty;
 
+            // Build swagger.json absolute path so ingress path prefix is preserved
+            var swaggerJsonUrl = string.IsNullOrWhiteSpace(pathBase)
+                ? "/swagger/v1/swagger.json"
+                : $"{pathBase}/swagger/v1/swagger.json";
+
             // Enable OpenAPI with server modification
             app.UseOpenApi(o =>
             {
@@ -108,8 +115,13 @@ namespace TC.CloudGames.Games.Api.Extensions
                 }
             });
 
-            // Enable Swagger UI
-            app.UseSwaggerUi(c => c.ConfigureDefaults());
+            // Enable Swagger UI with explicit swagger.json URL including path base
+            app.UseSwaggerUi(c =>
+            {
+                c.SwaggerRoutes.Clear();
+                c.SwaggerRoutes.Add(new SwaggerUiRoute("v1", swaggerJsonUrl));
+                c.ConfigureDefaults();
+            });
 
             return app;
         }
