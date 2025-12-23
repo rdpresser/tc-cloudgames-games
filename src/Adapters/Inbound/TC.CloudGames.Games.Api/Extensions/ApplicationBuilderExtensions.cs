@@ -97,14 +97,18 @@ namespace TC.CloudGames.Games.Api.Extensions
                 ?? configuration["PathBase"]
                 ?? string.Empty;
 
-            // Enable OpenAPI with server modification - handles path base from X-Forwarded-Prefix or UseIngressPathBase middleware
+            // Build swagger.json URL - use relative path for better compatibility with ingress paths
+            // Relative path ensures it works regardless of the ingress path prefix
+            var swaggerJsonUrl = "./swagger/v1/swagger.json";
+
+            // Enable OpenAPI with dynamic server URL based on PathBase
             app.UseOpenApi(o =>
             {
                 o.PostProcess = (doc, req) =>
                 {
                     doc.Servers.Clear();
                     
-                    // Get the base path from the request context (set by UseIngressPathBase middleware)
+                    // Get the request PathBase (set by UseIngressPathBase middleware)
                     var requestPathBase = req.HttpContext.Request.PathBase.ToString();
                     
                     if (!string.IsNullOrWhiteSpace(requestPathBase))
@@ -122,15 +126,12 @@ namespace TC.CloudGames.Games.Api.Extensions
                 };
             });
 
-            // Enable Swagger UI with dynamic swagger.json URL based on PathBase
-            // This ensures Swagger UI correctly loads the spec when behind an ingress with path prefix
+            // Enable Swagger UI with relative URL for compatibility with ingress path prefixes
+            // Relative URLs are resolved by the browser based on current location
             app.UseSwaggerUi(c =>
             {
                 c.SwaggerRoutes.Clear();
-                // Use relative URL that works with any ingress path prefix
-                // Browser will resolve it relative to the current location
-                // Example: if on /games/swagger/ui, ./swagger/v1/swagger.json → /games/swagger/v1/swagger.json
-                c.SwaggerRoutes.Add(new SwaggerUiRoute("v1", "./swagger/v1/swagger.json"));
+                c.SwaggerRoutes.Add(new SwaggerUiRoute("v1", swaggerJsonUrl));
                 c.ConfigureDefaults();
             });
 
