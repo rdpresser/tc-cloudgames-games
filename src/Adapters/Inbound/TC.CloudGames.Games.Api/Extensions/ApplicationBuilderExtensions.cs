@@ -49,7 +49,7 @@ namespace TC.CloudGames.Games.Api.Extensions
         }
 
         // Configures FastEndpoints with custom settings and Swagger generation
-        public static IApplicationBuilder UseCustomFastEndpoints(this IApplicationBuilder app)
+        public static IApplicationBuilder UseCustomFastEndpoints(this IApplicationBuilder app, IConfiguration configuration)
         {
             app.UseFastEndpoints(c =>
             {
@@ -88,7 +88,18 @@ namespace TC.CloudGames.Games.Api.Extensions
                     return problemDetails;
                 };
             })
-            .UseSwaggerGen();
+            .UseSwaggerGen(uiConfig: ui =>
+            {
+                var pathBase = Environment.GetEnvironmentVariable("ASPNETCORE_APPL_PATH")
+                    ?? configuration["ASPNETCORE_APPL_PATH"]
+                    ?? configuration["PathBase"]
+                    ?? string.Empty;
+
+                if (!string.IsNullOrWhiteSpace(pathBase))
+                {
+                    ui.ServerUrl = pathBase;
+                }
+            });
 
             return app;
         }
