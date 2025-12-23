@@ -21,7 +21,7 @@ namespace TC.CloudGames.Games.Api.Extensions
                 .AddValidatorsFromAssemblyContaining<CreateGameCommandValidator>()
                 .AddCaching()
                 .AddCustomAuthentication(builder.Configuration)
-                .AddCustomFastEndpoints()
+                .AddCustomFastEndpoints(builder.Configuration)
                 .ConfigureAppSettings(builder.Configuration)
                 .AddCustomHealthCheck()
                 .AddCustomOpenTelemetry(builder, builder.Configuration);
@@ -247,8 +247,10 @@ namespace TC.CloudGames.Games.Api.Extensions
         }
 
         // FastEndpoints Configuration
-        public static IServiceCollection AddCustomFastEndpoints(this IServiceCollection services)
+        public static IServiceCollection AddCustomFastEndpoints(this IServiceCollection services, IConfiguration configuration)
         {
+            var pathBase = configuration["ASPNETCORE_APPL_PATH"] ?? configuration["PathBase"] ?? string.Empty;
+            
             services.AddFastEndpoints(dicoveryOptions =>
             {
                 dicoveryOptions.Assemblies = [typeof(Application.DependencyInjection).Assembly];
@@ -261,6 +263,16 @@ namespace TC.CloudGames.Games.Api.Extensions
                     s.Version = "v1";
                     s.Description = "Game API for TC.CloudGames";
                     s.MarkNonNullablePropsAsRequired();
+                    
+                    // Add server with PathBase prefix for correct Swagger UI operation behind ingress
+                    if (!string.IsNullOrWhiteSpace(pathBase))
+                    {
+                        s.PostProcess = doc =>
+                        {
+                            doc.Servers.Clear();
+                            doc.Servers.Add(new NSwag.OpenApiServer { Url = pathBase });
+                        };
+                    }
                 };
 
                 o.RemoveEmptyRequestSchema = true;
