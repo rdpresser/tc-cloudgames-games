@@ -97,9 +97,11 @@ namespace TC.CloudGames.Games.Api.Extensions
                 ?? configuration["PathBase"]
                 ?? string.Empty;
 
-            // Build swagger.json URL - use relative path for better compatibility with ingress paths
-            // Relative path ensures it works regardless of the ingress path prefix
-            var swaggerJsonUrl = "./swagger/v1/swagger.json";
+            // Build swagger.json URL - use absolute path with PathBase prefix
+            // This ensures the Swagger UI correctly loads the spec when behind ingress
+            var swaggerJsonUrl = string.IsNullOrWhiteSpace(pathBase) 
+                ? "/swagger/v1/swagger.json" 
+                : $"{pathBase}/swagger/v1/swagger.json";
 
             // Enable OpenAPI with dynamic server URL based on PathBase
             app.UseOpenApi(o =>
@@ -126,8 +128,8 @@ namespace TC.CloudGames.Games.Api.Extensions
                 };
             });
 
-            // Enable Swagger UI with relative URL for compatibility with ingress path prefixes
-            // Relative URLs are resolved by the browser based on current location
+            // Enable Swagger UI with absolute path including PathBase
+            // This ensures the browser correctly resolves the swagger.json URL
             app.UseSwaggerUi(c =>
             {
                 c.SwaggerRoutes.Clear();
