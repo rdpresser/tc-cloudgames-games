@@ -15,6 +15,8 @@ namespace TC.CloudGames.Games.Api.Extensions
         }
 
         // Normalizes PathBase when the service runs behind an ingress with a path prefix (e.g. /games)
+        // CRITICAL: When nginx rewrite-target is used with X-Forwarded-Prefix header,
+        // this middleware restores the original path for the application context.
         public static IApplicationBuilder UseIngressPathBase(this IApplicationBuilder app, IConfiguration configuration)
         {
             var configuredBasePath = configuration["ASPNETCORE_APPL_PATH"] ?? configuration["PathBase"];
@@ -26,6 +28,7 @@ namespace TC.CloudGames.Games.Api.Extensions
 
             app.Use(async (context, next) =>
             {
+                // Priority 1: Check X-Forwarded-Prefix header (set by nginx with rewrite-target)
                 if (context.Request.Headers.TryGetValue("X-Forwarded-Prefix", out var prefixValues))
                 {
                     var prefix = prefixValues.FirstOrDefault();
@@ -37,9 +40,24 @@ namespace TC.CloudGames.Games.Api.Extensions
 
                         context.Request.PathBase = new PathString(normalized);
 
-                        if (context.Request.Path.StartsWithSegments(context.Request.PathBase, out var remaining))
+                        // Store in HttpContext.Items for Swagger to access
+                        context.Items["OriginalPathBase"] = normalized;
+                    }
+                }
+                // Priority 2: Check nginx X-Original-URI (contains full path before rewrite)
+                else if (context.Request.Headers.TryGetValue("X-Original-URI", out var originalUriValues))
+                {
+                    var originalUri = originalUriValues.FirstOrDefault() ?? string.Empty;
+                    
+                    // Extract prefix from original URI (e.g., /games/swagger/... -> /games)
+                    if (!string.IsNullOrWhiteSpace(originalUri))
+                    {
+                        var segments = originalUri.TrimStart('/').Split('/');
+                        if (segments.Length > 0 && segments[0] != "api" && segments[0] != "swagger")
                         {
-                            context.Request.Path = remaining;
+                            var pathBase = $"/{segments[0]}";
+                            context.Request.PathBase = new PathString(pathBase);
+                            context.Items["OriginalPathBase"] = pathBase;
                         }
                     }
                 }
