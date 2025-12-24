@@ -126,15 +126,14 @@ namespace TC.CloudGames.Games.Api.Extensions
             });
 
             // Enable Swagger UI
-            // CRITICAL: Use relative URL pattern that NSwag expects
-            // The "/" prefix tells NSwag to resolve relative to the current request PathBase
+            // CRITICAL: Use relative URL (without leading /) so NSwag resolves correctly with PathBase
+            // When PathBase is /games, NSwag will resolve to /games/swagger/v1/swagger.json
             app.UseSwaggerUi(c =>
             {
                 c.SwaggerRoutes.Clear();
                 
-                // Use root-relative path for swagger.json
-                // NSwag will automatically prepend the current PathBase
-                c.SwaggerRoutes.Add(new SwaggerUiRoute("v1", "/swagger/v1/swagger.json"));
+                // Use relative path (no leading slash) - NSwag will prepend current PathBase
+                c.SwaggerRoutes.Add(new SwaggerUiRoute("v1", "swagger/v1/swagger.json"));
                 
                 c.ConfigureDefaults();
             });
