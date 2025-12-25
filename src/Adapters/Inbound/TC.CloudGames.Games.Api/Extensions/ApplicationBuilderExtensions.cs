@@ -153,9 +153,19 @@ namespace TC.CloudGames.Games.Api.Extensions
                 
                 // Use absolute path WITH the PathBase prefix
                 // This ensures the URL is correct regardless of nginx rewriting
-                var swaggerJsonPath = string.IsNullOrEmpty(pathBase) 
-                    ? "/swagger/v1/swagger.json"
-                    : $"{pathBase.TrimEnd('/')}/swagger/v1/swagger.json";
+                // Normalize pathBase to ensure it starts with '/' (handles "games" vs "/games")
+                string swaggerJsonPath;
+                if (string.IsNullOrEmpty(pathBase))
+                {
+                    swaggerJsonPath = "/swagger/v1/swagger.json";
+                }
+                else
+                {
+                    var normalizedPathBase = pathBase.StartsWith('/') 
+                        ? pathBase.TrimEnd('/') 
+                        : $"/{pathBase.TrimEnd('/')}";
+                    swaggerJsonPath = $"{normalizedPathBase}/swagger/v1/swagger.json";
+                }
                 
                 c.SwaggerRoutes.Add(new SwaggerUiRoute("v1", swaggerJsonPath));
                 
