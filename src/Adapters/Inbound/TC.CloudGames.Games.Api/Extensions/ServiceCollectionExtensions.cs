@@ -1,5 +1,4 @@
-﻿using Azure.Identity;
-using Azure.Monitor.OpenTelemetry.AspNetCore;
+﻿using Azure.Monitor.OpenTelemetry.AspNetCore;
 using OpenTelemetry;
 using TC.CloudGames.SharedKernel.Infrastructure.Telemetry;
 
@@ -85,13 +84,11 @@ namespace TC.CloudGames.Games.Api.Extensions
                 });
 
                 // Configure Azure Monitor exporter
+                // Note: Using Connection String auth only (no AAD/DefaultAzureCredential)
+                // to ensure Live Metrics compatibility
                 otelBuilder.UseAzureMonitor(options =>
                 {
                     options.ConnectionString = appInsightsConnectionString;
-
-                    // Use DefaultAzureCredential for RBAC/Workload Identity authentication
-                    // This enables AAD-based auth when running in AKS with Workload Identity
-                    options.Credential = new DefaultAzureCredential();
 
                     // Sampling ratio from configuration
                     options.SamplingRatio = samplingRatio;
